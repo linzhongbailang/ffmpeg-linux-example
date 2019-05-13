@@ -1,59 +1,70 @@
-/* File Name: server.c */  
-#include<stdio.h>  
-#include<stdlib.h>  
-#include<string.h>  
-#include<errno.h>  
-#include<sys/types.h>  
-#include<sys/socket.h>  
-#include<netinet/in.h>  
-#define DEFAULT_PORT 8000  
-#define MAXLINE 4096  
-int main(int argc, char** argv)  
-{  
-    int    socket_fd, connect_fd;  
-    struct sockaddr_in     servaddr;  
-    char    buff[4096];  
-    int     n;  
-    //åˆå§‹åŒ–Socket  
-    if( (socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1 ){  
-    printf("create socket error: %s(errno: %d)\n",strerror(errno),errno);  
-    exit(0);  
-    }  
-    //åˆå§‹åŒ–  
-    memset(&servaddr, 0, sizeof(servaddr));  
-    servaddr.sin_family = AF_INET;  
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);//IPåœ°å€è®¾ç½®æˆINADDR_ANY,è®©ç³»ç»Ÿè‡ªåŠ¨è·å–æœ¬æœºçš„IPåœ°å€ã€‚  
-    servaddr.sin_port = htons(DEFAULT_PORT);//è®¾ç½®çš„ç«¯å£ä¸ºDEFAULT_PORT  
-  
-    //å°†æœ¬åœ°åœ°å€ç»‘å®šåˆ°æ‰€åˆ›å»ºçš„å¥—æ¥å­—ä¸Š  
-    if( bind(socket_fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) == -1){  
-    printf("bind socket error: %s(errno: %d)\n",strerror(errno),errno);  
-    exit(0);  
-    }  
-    //å¼€å§‹ç›‘å¬æ˜¯å¦æœ‰å®¢æˆ·ç«¯è¿æ¥  
-    if( listen(socket_fd, 10) == -1){  
-    printf("listen socket error: %s(errno: %d)\n",strerror(errno),errno);  
-    exit(0);  
-    }  
-    printf("======waiting for client's request======\n");  
-    while(1){  
-//é˜»å¡ç›´åˆ°æœ‰å®¢æˆ·ç«¯è¿æ¥ï¼Œä¸ç„¶å¤šæµªè´¹CPUèµ„æºã€‚  
-        if( (connect_fd = accept(socket_fd, (struct sockaddr*)NULL, NULL)) == -1){  
-        printf("accept socket error: %s(errno: %d)",strerror(errno),errno);  
-        continue;  
-    }  
-//æ¥å—å®¢æˆ·ç«¯ä¼ è¿‡æ¥çš„æ•°æ®  
-    n = recv(connect_fd, buff, MAXLINE, 0);  
-//å‘å®¢æˆ·ç«¯å‘é€å›åº”æ•°æ®  
-    if(!fork()){ /*ç´«ç¦åŸ*/  
-        if(send(connect_fd, "Hello,you are connected!\n", 26,0) == -1)  
-        perror("send error");  
-        close(connect_fd);  
-        exit(0);  
-    }  
-    buff[n] = '\0';  
-    printf("recv msg from client: %s\n", buff);  
-    close(connect_fd);  
-    }  
-    close(socket_fd);  
-}  
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+
+#define SERVER_PORT 8888
+#define BUFF_LEN 1024
+
+void handle_udp_msg(int fd)
+{
+    char buf[BUFF_LEN];  //½ÓÊÕ»º³åÇø£¬1024×Ö½Ú
+    socklen_t len;
+    int count;
+    struct sockaddr_in clent_addr;  //clent_addrÓÃÓÚ¼ÇÂ¼·¢ËÍ·½µÄµØÖ·ĞÅÏ¢
+    while(1)
+    {
+        memset(buf, 0, BUFF_LEN);
+        len = sizeof(clent_addr);
+        count = recvfrom(fd, buf, BUFF_LEN, 0, (struct sockaddr*)&clent_addr, &len);  //recvfromÊÇÓµÈûº¯Êı£¬Ã»ÓĞÊı¾İ¾ÍÒ»Ö±ÓµÈû
+        if(count == -1)
+        {
+            printf("recieve data fail!\n");
+            return;
+        }
+        printf("client:%s\n",buf);  //´òÓ¡client·¢¹ıÀ´µÄĞÅÏ¢
+        memset(buf, 0, BUFF_LEN);
+        sprintf(buf, "I have recieved %d bytes data!\n", count);  //»Ø¸´client
+        printf("server:%s\n",buf);  //´òÓ¡×Ô¼º·¢ËÍµÄĞÅÏ¢¸ø
+        sendto(fd, buf, BUFF_LEN, 0, (struct sockaddr*)&clent_addr, len);  //·¢ËÍĞÅÏ¢¸øclient£¬×¢ÒâÊ¹ÓÃÁËclent_addr½á¹¹ÌåÖ¸Õë
+
+    }
+}
+
+
+/*
+    server:
+            socket-->bind-->recvfrom-->sendto-->close
+*/
+
+int main(int argc, char* argv[])
+{
+    int server_fd, ret;
+    struct sockaddr_in ser_addr; 
+
+    server_fd = socket(AF_INET, SOCK_DGRAM, 0); //AF_INET:IPV4;SOCK_DGRAM:UDP
+    if(server_fd < 0)
+    {
+        printf("create socket fail!\n");
+        return -1;
+    }
+
+    memset(&ser_addr, 0, sizeof(ser_addr));
+    ser_addr.sin_family = AF_INET;
+    ser_addr.sin_addr.s_addr = htonl(INADDR_ANY); //IPµØÖ·£¬ĞèÒª½øĞĞÍøÂçĞò×ª»»£¬INADDR_ANY£º±¾µØµØÖ·
+    ser_addr.sin_port = htons(SERVER_PORT);  //¶Ë¿ÚºÅ£¬ĞèÒªÍøÂçĞò×ª»»
+
+    ret = bind(server_fd, (struct sockaddr*)&ser_addr, sizeof(ser_addr));
+    if(ret < 0)
+    {
+        printf("socket bind fail!\n");
+        return -1;
+    }
+
+    handle_udp_msg(server_fd);   //´¦Àí½ÓÊÕµ½µÄÊı¾İ
+
+    close(server_fd);
+    return 0;
+}
+
