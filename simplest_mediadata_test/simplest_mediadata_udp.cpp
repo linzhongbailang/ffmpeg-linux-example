@@ -26,6 +26,10 @@
  *
  */
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
  
 
 
@@ -64,40 +68,70 @@ typedef struct MPEGTS_FIXED_HEADER {
 } MPEGTS_FIXED_HEADER;
 
 
+#define SERVER_PORT 8880
+#define BUFF_LEN 10000
+#define SERVER_IP "192.168.20.128"
+
+
+
+
 
 int simplest_udp_parser(int port)
 {
-	WSADATA wsaData;
-	WORD sockVersion = MAKEWORD(2,2);
+	//WSADATA wsaData;
+	//WORD sockVersion = MAKEWORD(2,2);
 	int cnt=0;
+    int server_fd;
+    int  ret=0;
 
 	//FILE *myout=fopen("output_log.txt","wb+");
 	FILE *myout=stdout;
 
 	FILE *fp1=fopen("output_dump.ts","wb+");
 
-	if(WSAStartup(sockVersion, &wsaData) != 0){
-		return 0;
-	}
+	//if(WSAStartup(sockVersion, &wsaData) != 0){
+	//	return 0;
+	//}
 
-	SOCKET serSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-	if(serSocket == INVALID_SOCKET){
-		printf("socket error !");
-		return 0;
-	}
+	//SOCKET serSocket = socket(AF_INET, SOCK_DGRAM, 0); 
+	//if(serSocket == INVALID_SOCKET){
+	//	printf("socket error !");
+	//	return 0;
+	//}
 
-	sockaddr_in serAddr;
-	serAddr.sin_family = AF_INET;
-	serAddr.sin_port = htons(port);
-	serAddr.sin_addr.S_un.S_addr = INADDR_ANY;
-	if(bind(serSocket, (sockaddr *)&serAddr, sizeof(serAddr)) == SOCKET_ERROR){
-		printf("bind error !");
-		closesocket(serSocket);
-		return 0;
-	}
+	//sockaddr_in serAddr;
+	//serAddr.sin_family = AF_INET;
+	//serAddr.sin_port = htons(port);
+	//serAddr.sin_addr.S_un.S_addr = INADDR_ANY;
+	//if(bind(serSocket, (sockaddr *)&serAddr, sizeof(serAddr)) == SOCKET_ERROR){
+	//	printf("bind error !");
+	//	closesocket(serSocket);
+	//	return 0;
+	//}
+    //int  ret=0;
+    struct sockaddr_in ser_addr; 
 
+    server_fd = socket(AF_INET, SOCK_DGRAM, 0); //AF_INET:IPV4;SOCK_DGRAM:UDP
+    if(server_fd < 0)
+    {
+        printf("create socket fail!\n");
+        return -1;
+    }
+
+    memset(&ser_addr, 0, sizeof(ser_addr));
+    ser_addr.sin_family = AF_INET;
+    ser_addr.sin_addr.s_addr = htonl(INADDR_ANY); //IP地址，需要进行网络序转换，INADDR_ANY：本地地址
+    ser_addr.sin_port = htons(SERVER_PORT);  //端口号，需要网络序转换
+
+    ret = bind(server_fd, (struct sockaddr*)&ser_addr, sizeof(ser_addr));
+    if(ret < 0)
+    {
+        printf("socket bind fail!\n");
+        return -1;
+    }
+    
 	sockaddr_in remoteAddr;
-	int nAddrLen = sizeof(remoteAddr); 
+	socklen_t  nAddrLen = sizeof(remoteAddr); 
 
 	//How to parse?
 	int parse_rtp=1;
@@ -108,7 +142,7 @@ int simplest_udp_parser(int port)
 	char recvData[10000];  
 	while (1){
 
-		int pktsize = recvfrom(serSocket, recvData, 10000, 0, (sockaddr *)&remoteAddr, &nAddrLen);
+		int pktsize = recvfrom(server_fd, recvData, 10000, 0, (sockaddr *)&remoteAddr, &nAddrLen);
 		if (pktsize > 0){
 			//printf("Addr:%s\r\n",inet_ntoa(remoteAddr.sin_addr));
 			//printf("packet size:%d\r\n",pktsize);
@@ -181,8 +215,8 @@ int simplest_udp_parser(int port)
 			cnt++;
 		}
 	}
-	closesocket(serSocket); 
-	WSACleanup();
+	//closesocket(ser_addr); 
+	//WSACleanup();
 	fclose(fp1);
 
 	return 0;

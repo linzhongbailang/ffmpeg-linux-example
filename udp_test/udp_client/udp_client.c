@@ -4,7 +4,7 @@
 #include <netinet/in.h>
 #include <string.h>
 
-#define SERVER_PORT 8888
+#define SERVER_PORT 8880
 #define BUFF_LEN 512
 #define SERVER_IP "192.168.20.128"
 

@@ -247,7 +247,7 @@ int main(int argc, char* argv[]){
 
 	//simplest_aac_parser("nocturne.aac");
 
-	//simplest_udp_parser(8880);
+	simplest_udp_parser(8880);
 
 	return 0;
 }
