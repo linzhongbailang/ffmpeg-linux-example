@@ -94,8 +94,8 @@ int main(int argc, char** argv )
 {  
 	cout << argv[0]<<" start" << endl;
 
-    simplest_h264_parser(argv[1]);
-    //simplest_udp_parser(atoi (argv[1]));
+    //simplest_h264_parser(argv[1]);
+    simplest_udp_parser(atoi (argv[1]));
     //simplest_flv_parser(argv[1]);
 	return 0;     
 }  
