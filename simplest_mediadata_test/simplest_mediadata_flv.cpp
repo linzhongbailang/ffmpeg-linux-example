@@ -56,10 +56,26 @@ typedef struct {
 
 //reverse_bytes - turn a BigEndian byte array into a LittleEndian integer
 uint reverse_bytes(byte *p, char c) {
-	int r = 0;
-	int i;
-	for (i=0; i<c; i++) 
-		r |= ( *(p+i) << (((c-1)*8)-8*i));
+    int r = 0;
+    int i;
+
+    if(1){
+       
+            
+	    for (i=0; i<c; i++) {
+            printf("%d",*(p+i));
+		    r |= ( *(p+i) << (((c-1)*8)-8*i));
+        }
+        
+        printf("r=0x%x",r);
+
+    }
+    else{
+        
+	    for (i=0; i<c; i++) 
+		r |= ( *(p+i) << (((c-1-i)*8)-8*i));
+    }
+	
 	return r;
 }
 
@@ -81,7 +97,7 @@ int simplest_flv_parser(char *url){
 
 	FLV_HEADER flv;
 	TAG_HEADER tagheader;
-	uint previoustagsize, previoustagsize_z=0;
+	uint  previoustagsize_z=0;
 	uint ts=0, ts_new=0;
 
 	ifh = fopen(url, "rb+");
@@ -97,16 +113,18 @@ int simplest_flv_parser(char *url){
 	fprintf(myout,"Signature:  0x %c %c %c\n",flv.Signature[0],flv.Signature[1],flv.Signature[2]);
 	fprintf(myout,"Version:    0x %X\n",flv.Version);
 	fprintf(myout,"Flags  :    0x %X\n",flv.Flags);
-	fprintf(myout,"HeaderSize: 0x %X\n",reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)));
-	fprintf(myout,"========================================\n");
+	//fprintf(myout,"HeaderSize: 0x %X\n",reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)));
+	fprintf(myout,"HeaderSize: 0x %X\n",flv.DataOffset);
+    fprintf(myout,"========================================\n");
 
 	//move the file pointer to the end of the header
-	fseek(ifh, reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)), SEEK_SET);
+	//fseek(ifh, reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)), SEEK_SET);
+	fseek(ifh, flv.DataOffset, SEEK_SET);
 
 	//process each tag
 	do {
 
-		previoustagsize = _getw(ifh);
+		//previoustagsize = _getw(ifh);
 
 		fread((void *)&tagheader,sizeof(TAG_HEADER),1,ifh);
 
@@ -282,7 +300,10 @@ int simplest_flv_parser(char *url){
 	} while (!feof(ifh));
 
 
-	_fcloseall();
-
+	//_fcloseall();
+    fclose(ifh);
+    fclose(vfh);
+    fclose(afh);
+    
 	return 0;
 }

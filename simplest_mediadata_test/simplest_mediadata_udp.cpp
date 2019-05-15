@@ -83,9 +83,11 @@ int simplest_udp_parser(int port)
 	int cnt=0;
     int server_fd;
     int  ret=0;
+    int ts_len=0;
 
 	//FILE *myout=fopen("output_log.txt","wb+");
 	FILE *myout=stdout;
+    
 
 	FILE *fp1=fopen("output_dump.ts","wb+");
 
@@ -111,7 +113,7 @@ int simplest_udp_parser(int port)
     //int  ret=0;
     struct sockaddr_in ser_addr; 
 
-    server_fd = socket(AF_INET, SOCK_DGRAM, 0); //AF_INET:IPV4;SOCK_DGRAM:UDP
+    server_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); //AF_INET:IPV4;SOCK_DGRAM:UDP
     if(server_fd < 0)
     {
         printf("create socket fail!\n");
@@ -188,12 +190,14 @@ int simplest_udp_parser(int port)
 				unsigned int timestamp=ntohl(rtp_header.timestamp);
 				unsigned int seq_no=ntohs(rtp_header.seq_no);
 
-				fprintf(myout,"[RTP Pkt] %5d| %5s| %10u| %5d| %5d|\n",cnt,payload_str,timestamp,seq_no,pktsize);
-
+				
 				//RTP Data
 				char *rtp_data=recvData+rtp_header_size;
 				int rtp_data_size=pktsize-rtp_header_size;
-				fwrite(rtp_data,rtp_data_size,1,fp1);
+                ts_len+=rtp_data_size;
+
+                fprintf(myout,"[RTP Pkt] %5d| %5s| %10u| %5d| %5d| %d|\n",cnt,payload_str,timestamp,seq_no,pktsize,ts_len);
+				//fwrite(rtp_data,rtp_data_size,1,fp1);
 
 				//Parse MPEGTS
 				if(parse_mpegts!=0&&payload==33){
@@ -206,7 +210,6 @@ int simplest_udp_parser(int port)
 						fprintf(myout,"   [MPEGTS Pkt]\n");
 					}
 				}
-
 			}else{
 				fprintf(myout,"[UDP Pkt] %5d| %5d|\n",cnt,pktsize);
 				fwrite(recvData,pktsize,1,fp1);

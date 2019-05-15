@@ -206,6 +206,10 @@ int simplest_pcm16le_to_wave(const char *pcmpath,int channels,int sample_rate,co
 
 int main(int argc, char* argv[]){
 
+    if(argc<2){
+        printf("simplest_mediadata_test flv-parser\n");
+        printf("simplest_mediadata_test udp-parser\n");
+    }
 	//Test
 	//simplest_yuv420_split("lena_256x256_yuv420p.yuv",256,256,1);
 
@@ -242,12 +246,14 @@ int main(int argc, char* argv[]){
 	//simplest_pcm16le_to_wave("NocturneNo2inEflat_44.1k_s16le.pcm",2,44100,"output_nocturne.wav");
 
 	//simplest_h264_parser("sintel.h264");
-	
-	//simplest_flv_parser("cuc_ieschool.flv");
-
+	else if(0==strcmp(argv[1],"flv-parser")){
+        printf("simplest_flv_parser test\n");
+	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv");
+    }
 	//simplest_aac_parser("nocturne.aac");
-
-	simplest_udp_parser(8880);
-
+    else if(0==strcmp(argv[1],"udp-parser")){
+        printf("simplest_udp_parser test\n");
+	    simplest_udp_parser(8880);
+    }
 	return 0;
 }
