@@ -59,22 +59,8 @@ uint reverse_bytes(byte *p, char c) {
     int r = 0;
     int i;
 
-    if(1){
-       
-            
-	    for (i=0; i<c; i++) {
-            printf("%d",*(p+i));
-		    r |= ( *(p+i) << (((c-1)*8)-8*i));
-        }
-        
-        printf("r=0x%x",r);
-
-    }
-    else{
-        
-	    for (i=0; i<c; i++) 
-		r |= ( *(p+i) << (((c-1-i)*8)-8*i));
-    }
+   for (i=0; i<c; i++) 
+    r |= ( *(p+i) << (((c-1)*8)-8*i));
 	
 	return r;
 }
@@ -89,6 +75,7 @@ int simplest_flv_parser(char *url){
 	//whether output audio/video stream
 	int output_a=1;
 	int output_v=1;
+    char tmp_data[100]={0,};
 	//-------------
 	FILE *ifh=NULL,*vfh=NULL, *afh = NULL;
 
@@ -97,7 +84,7 @@ int simplest_flv_parser(char *url){
 
 	FLV_HEADER flv;
 	TAG_HEADER tagheader;
-	uint  previoustagsize_z=0;
+	uint previoustagsize, previoustagsize_z=0;
 	uint ts=0, ts_new=0;
 
 	ifh = fopen(url, "rb+");
@@ -107,28 +94,39 @@ int simplest_flv_parser(char *url){
 	}
 
 	//FLV file header
-	fread((char *)&flv,1,sizeof(FLV_HEADER),ifh);
+	//fread((char *)&flv,1,sizeof(FLV_HEADER),ifh);
+	fread(tmp_data,1,9,ifh);
+    flv.Signature[0]=tmp_data[0];
+    flv.Signature[1]=tmp_data[1];
+    flv.Signature[2]=tmp_data[2];
+    flv.Version=tmp_data[3];
+    flv.Flags=tmp_data[4];
+    flv.DataOffset=tmp_data[5]*0x1000000+tmp_data[6]*0x10000+tmp_data[7]*0x100+tmp_data[8];
 
 	fprintf(myout,"============== FLV Header ==============\n");
 	fprintf(myout,"Signature:  0x %c %c %c\n",flv.Signature[0],flv.Signature[1],flv.Signature[2]);
 	fprintf(myout,"Version:    0x %X\n",flv.Version);
 	fprintf(myout,"Flags  :    0x %X\n",flv.Flags);
-	//fprintf(myout,"HeaderSize: 0x %X\n",reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)));
 	fprintf(myout,"HeaderSize: 0x %X\n",flv.DataOffset);
     fprintf(myout,"========================================\n");
 
 	//move the file pointer to the end of the header
-	//fseek(ifh, reverse_bytes((byte *)&flv.DataOffset, sizeof(flv.DataOffset)), SEEK_SET);
 	fseek(ifh, flv.DataOffset, SEEK_SET);
 
 	//process each tag
 	do {
-
-		//previoustagsize = _getw(ifh);
-
-		fread((void *)&tagheader,sizeof(TAG_HEADER),1,ifh);
-
-		//int temp_datasize1=reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize));
+        char char_int[4];
+        fread(char_int,4,1,ifh);
+        previoustagsize= (char_int[0]<<24) + (char_int[1]<<16) + (char_int[2]<<8) +(char_int[3]<<0);
+		fread(tmp_data,11,1,ifh);
+        tagheader.TagType=tmp_data[0];
+        tagheader.DataSize[0]=tmp_data[1];
+        tagheader.DataSize[1]=tmp_data[2];
+        tagheader.DataSize[2]=tmp_data[3];
+        tagheader.Timestamp[0]=tmp_data[4];
+        tagheader.Timestamp[1]=tmp_data[5];
+        tagheader.Timestamp[2]=tmp_data[6];
+      
 		int tagheader_datasize=tagheader.DataSize[0]*65536+tagheader.DataSize[1]*256+tagheader.DataSize[2];
 		int tagheader_timestamp=tagheader.Timestamp[0]*65536+tagheader.Timestamp[1]*256+tagheader.Timestamp[2];
 
@@ -226,7 +224,10 @@ int simplest_flv_parser(char *url){
 			char videotag_str[100]={0};
 			strcat(videotag_str,"| ");
 			char tagdata_first_byte;
-			tagdata_first_byte=fgetc(ifh);
+            long file_offset=0;
+
+            file_offset=ftell(ifh);
+			fread((void *)&tagdata_first_byte,sizeof(tagdata_first_byte),1,ifh);
 			int x=tagdata_first_byte&0xF0;
 			x=x>>4;
 			switch (x)
@@ -293,6 +294,7 @@ int simplest_flv_parser(char *url){
 
 			//skip the data of this tag
 			fseek(ifh, reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize)), SEEK_CUR);
+            break;
 		}
 
 		fprintf(myout,"\n");
