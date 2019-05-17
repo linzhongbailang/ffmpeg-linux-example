@@ -40,7 +40,7 @@ extern int simplest_h264_parser(char *url);
  * Analysis FLV file
  * @param url    Location of input FLV file.
  */
-extern int simplest_flv_parser(char *url);
+extern int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl);
 
 /**
  * Analysis AAC file

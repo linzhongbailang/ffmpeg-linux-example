@@ -32,7 +32,7 @@ using namespace std;
 
 int simplest_h264_parser(char *url);
 int simplest_udp_parser(int port);
-int simplest_flv_parser(char *url);
+int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl);
 
 
 void CameraImage_To_Video(void)   //输入应该是起始和结束帧以及原视频对象

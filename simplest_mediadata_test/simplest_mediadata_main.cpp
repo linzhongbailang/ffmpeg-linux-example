@@ -40,7 +40,7 @@ int simplest_h264_parser(char *url);
  * Analysis FLV file
  * @param url    Location of input FLV file.
  */
-int simplest_flv_parser(char *url);
+int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl);
 
 /**
  * Analysis AAC file
@@ -248,7 +248,8 @@ int main(int argc, char* argv[]){
 	//simplest_h264_parser("sintel.h264");
 	else if(0==strcmp(argv[1],"flv-parser")){
         printf("simplest_flv_parser test\n");
-	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv");
+	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv","audio_output.mp3","video_output.flv");
+        simplest_flv_parser("video_output.flv","audio_output1.mp3","video_output1.flv");
     }
 	//simplest_aac_parser("nocturne.aac");
     else if(0==strcmp(argv[1],"udp-parser")){

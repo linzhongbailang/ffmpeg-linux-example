@@ -70,7 +70,7 @@ uint reverse_bytes(byte *p, char c) {
  * @param url    Location of input FLV file.
  */
 
-int simplest_flv_parser(char *url){
+int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl){
 
 	//whether output audio/video stream
 	int output_a=1;
@@ -85,9 +85,10 @@ int simplest_flv_parser(char *url){
 	FLV_HEADER flv;
 	TAG_HEADER tagheader;
 	uint previoustagsize, previoustagsize_z=0;
+    
 	uint ts=0, ts_new=0;
 
-	ifh = fopen(url, "rb+");
+	ifh = fopen(in_url, "rb+");
 	if ( ifh== NULL) {
 		printf("Failed to open files!");
 		return -1;
@@ -204,7 +205,7 @@ int simplest_flv_parser(char *url){
 
 			//if the output file hasn't been opened, open it.
 			if(output_a!=0&&afh == NULL){
-				afh = fopen("output.mp3", "wb");
+				afh = fopen("vidoe_out_url.mp3", "wb");
 			}
 
 			//TagData - First Byte Data
@@ -258,10 +259,30 @@ int simplest_flv_parser(char *url){
 			//if the output file hasn't been opened, open it.
 			if (vfh == NULL&&output_v!=0) {
 				//write the flv header (reuse the original file's hdr) and first previoustagsize
-					vfh = fopen("output.flv", "wb");
-					fwrite((char *)&flv,1, sizeof(flv),vfh);
-					fwrite((char *)&previoustagsize_z,1,sizeof(previoustagsize_z),vfh);
+					vfh = fopen("audio_out_urtl.flv", "wb");
+					//fwrite((char *)&flv,1, sizeof(flv),vfh);
+					tmp_data[0]=flv.Signature[0];
+					tmp_data[1]=flv.Signature[1];
+					tmp_data[2]=flv.Signature[2];
+					tmp_data[3]=flv.Version;
+					tmp_data[4]=flv.Flags;
+					tmp_data[5]=flv.DataOffset>>24;
+					tmp_data[6]=flv.DataOffset>>16;
+					tmp_data[7]=flv.DataOffset>>8;
+					tmp_data[8]=flv.DataOffset;
+					fwrite(tmp_data,1,9,vfh);
+                    printf("flv 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x ",tmp_data[0],
+                        tmp_data[1],tmp_data[2],tmp_data[3],tmp_data[4],tmp_data[5],tmp_data[6],
+                        tmp_data[7],tmp_data[8]);
+                    previoustagsize_z=0;
+                    tmp_data[0]=previoustagsize_z>>24;
+					tmp_data[1]=previoustagsize_z>>16;
+					tmp_data[2]=previoustagsize_z>>8;
+					tmp_data[3]=previoustagsize_z;
+					fwrite(tmp_data,1,sizeof(previoustagsize_z),vfh);
 			}
+            
+           
 #if 0
 			//Change Timestamp
 			//Get Timestamp
@@ -277,7 +298,19 @@ int simplest_flv_parser(char *url){
 			int data_size=reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize))+4;
 			if(output_v!=0){
 				//TagHeader
-				fwrite((char *)&tagheader,1, sizeof(tagheader),vfh);
+				//fwrite((char *)&tagheader,1, sizeof(tagheader),vfh);
+				tmp_data[0]=tagheader.TagType;
+                tmp_data[1]=tagheader.DataSize[0];
+                tmp_data[2]=tagheader.DataSize[1];
+                tmp_data[3]=tagheader.DataSize[2];
+                tmp_data[4]=tagheader.Timestamp[0];
+                tmp_data[5]=tagheader.Timestamp[1];
+                tmp_data[6]=tagheader.Timestamp[2];
+                tmp_data[7]=0;
+                tmp_data[8]=0;
+                tmp_data[9]=0;
+                tmp_data[10]=0;
+                fwrite(tmp_data,1, 11,vfh);
 				//TagData
 				for (int i=0; i<data_size; i++)
 					fputc(fgetc(ifh),vfh);
@@ -303,9 +336,12 @@ int simplest_flv_parser(char *url){
 
 
 	//_fcloseall();
-    fclose(ifh);
-    fclose(vfh);
-    fclose(afh);
+	if(ifh!=NULL)
+        fclose(ifh);
+    if(vfh!=NULL)
+        fclose(vfh);
+    if(afh!=NULL)
+        fclose(afh);
     
 	return 0;
 }
