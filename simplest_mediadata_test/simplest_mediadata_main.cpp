@@ -248,8 +248,8 @@ int main(int argc, char* argv[]){
 	//simplest_h264_parser("sintel.h264");
 	else if(0==strcmp(argv[1],"flv-parser")){
         printf("simplest_flv_parser test\n");
-	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv","audio_output.mp3","video_output.flv");
-        simplest_flv_parser("video_output.flv","audio_output1.mp3","video_output1.flv");
+	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv","video_output.flv","audio_output.mp3");
+        simplest_flv_parser("video_output.flv","video_output1.flv","audio_output1.mp3");
     }
 	//simplest_aac_parser("nocturne.aac");
     else if(0==strcmp(argv[1],"udp-parser")){

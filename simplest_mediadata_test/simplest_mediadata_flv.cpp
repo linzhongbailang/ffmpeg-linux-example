@@ -205,7 +205,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 
 			//if the output file hasn't been opened, open it.
 			if(output_a!=0&&afh == NULL){
-				afh = fopen("vidoe_out_url.mp3", "wb");
+				afh = fopen(audio_out_urtl, "wb");
 			}
 
 			//TagData - First Byte Data
@@ -259,7 +259,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 			//if the output file hasn't been opened, open it.
 			if (vfh == NULL&&output_v!=0) {
 				//write the flv header (reuse the original file's hdr) and first previoustagsize
-					vfh = fopen("audio_out_urtl.flv", "wb");
+					vfh = fopen(vidoe_out_url, "wb");
 					//fwrite((char *)&flv,1, sizeof(flv),vfh);
 					tmp_data[0]=flv.Signature[0];
 					tmp_data[1]=flv.Signature[1];
