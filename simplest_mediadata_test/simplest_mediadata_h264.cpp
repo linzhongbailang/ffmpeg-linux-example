@@ -168,6 +168,7 @@ int simplest_h264_parser(char *url){
 	//FILE *myout=fopen("output_log.txt","wb+");
 	FILE *myout=stdout;
 
+    //printf("Open file %s\n",url);
 	h264bitstream=fopen(url, "rb+");
 	if (h264bitstream==NULL){
 		printf("Open file error\n");
@@ -237,6 +238,8 @@ int simplest_h264_parser(char *url){
 		}
 		free (n);
 	}
+
+    fclose(h264bitstream);
 	return 0;
 }
 

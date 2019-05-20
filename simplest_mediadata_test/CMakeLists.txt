@@ -34,7 +34,7 @@ message(STATUS "CMAKE_CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 message(STATUS "CMAKE_LD_FLAGS = " ${CMAKE_LD_FLAGS})
 
 add_executable(simplest_mediadata_test 	simplest_mediadata_main.cpp
-										#simplest_mediadata_h264.cpp
+										simplest_mediadata_h264.cpp
 										simplest_mediadata_udp.cpp
 										simplest_mediadata_flv.cpp
 										)

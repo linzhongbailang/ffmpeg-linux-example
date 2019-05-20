@@ -87,6 +87,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 	uint previoustagsize, previoustagsize_z=0;
     
 	uint ts=0, ts_new=0;
+    int video_count=0;
 
 	ifh = fopen(in_url, "rb+");
 	if ( ifh== NULL) {
@@ -295,8 +296,9 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 
 
 			//TagData + Previous Tag Size
+			video_count++;
 			int data_size=reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize))+4;
-			if(output_v!=0){
+			if(output_v!=0  ){
 				//TagHeader
 				//fwrite((char *)&tagheader,1, sizeof(tagheader),vfh);
 				tmp_data[0]=tagheader.TagType;

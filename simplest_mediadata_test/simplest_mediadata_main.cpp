@@ -207,6 +207,7 @@ int simplest_pcm16le_to_wave(const char *pcmpath,int channels,int sample_rate,co
 int main(int argc, char* argv[]){
 
     if(argc<2){
+        printf("simplest_mediadata_test h264-parser\n");
         printf("simplest_mediadata_test flv-parser\n");
         printf("simplest_mediadata_test udp-parser\n");
     }
@@ -244,12 +245,15 @@ int main(int argc, char* argv[]){
 	//simplest_pcm16le_cut_singlechannel("drum.pcm",2360,120);
 
 	//simplest_pcm16le_to_wave("NocturneNo2inEflat_44.1k_s16le.pcm",2,44100,"output_nocturne.wav");
-
-	//simplest_h264_parser("sintel.h264");
+    else if(0==strcmp(argv[1],"h264-parser")){
+        printf("simplest_h264_parser test\n");
+        simplest_h264_parser("../../simplest_mediadata_test/sintel.h264");
+    }
 	else if(0==strcmp(argv[1],"flv-parser")){
         printf("simplest_flv_parser test\n");
-	    simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv","video_output.flv","audio_output.mp3");
-        simplest_flv_parser("video_output.flv","video_output1.flv","audio_output1.mp3");
+	    //simplest_flv_parser("../../simplest_mediadata_test/cuc_ieschool.flv","video_output.flv","audio_output.mp3");
+	    simplest_flv_parser("../../simplest_mediadata_test/source_material_1.flv","video_output.flv","audio_output.mp3");
+        //simplest_flv_parser("video_output.flv","video_output1.flv","audio_output1.mp3");
     }
 	//simplest_aac_parser("nocturne.aac");
     else if(0==strcmp(argv[1],"udp-parser")){
