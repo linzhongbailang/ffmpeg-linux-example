@@ -53,6 +53,12 @@ typedef struct {
 	uint Reserved;
 } TAG_HEADER;
 
+typedef struct {
+    TAG_HEADER TAG_Header;
+    char * TAG_data_ptr;            
+    unsigned int previous_tag_len;
+}TAG;
+
 
 //reverse_bytes - turn a BigEndian byte array into a LittleEndian integer
 uint reverse_bytes(byte *p, char c) {
@@ -83,7 +89,8 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 	FILE *myout=stdout;
 
 	FLV_HEADER flv;
-	TAG_HEADER tagheader;
+	//TAG_HEADER tagheader;
+    TAG tag;
 	uint previoustagsize, previoustagsize_z=0;
     
 	uint ts=0, ts_new=0;
@@ -121,19 +128,19 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
         fread(char_int,4,1,ifh);
         previoustagsize= (char_int[0]<<24) + (char_int[1]<<16) + (char_int[2]<<8) +(char_int[3]<<0);
 		fread(tmp_data,11,1,ifh);
-        tagheader.TagType=tmp_data[0];
-        tagheader.DataSize[0]=tmp_data[1];
-        tagheader.DataSize[1]=tmp_data[2];
-        tagheader.DataSize[2]=tmp_data[3];
-        tagheader.Timestamp[0]=tmp_data[4];
-        tagheader.Timestamp[1]=tmp_data[5];
-        tagheader.Timestamp[2]=tmp_data[6];
+        tag.TAG_Header.TagType=tmp_data[0];
+        tag.TAG_Header.DataSize[0]=tmp_data[1];
+        tag.TAG_Header.DataSize[1]=tmp_data[2];
+        tag.TAG_Header.DataSize[2]=tmp_data[3];
+        tag.TAG_Header.Timestamp[0]=tmp_data[4];
+        tag.TAG_Header.Timestamp[1]=tmp_data[5];
+        tag.TAG_Header.Timestamp[2]=tmp_data[6];
       
-		int tagheader_datasize=tagheader.DataSize[0]*65536+tagheader.DataSize[1]*256+tagheader.DataSize[2];
-		int tagheader_timestamp=tagheader.Timestamp[0]*65536+tagheader.Timestamp[1]*256+tagheader.Timestamp[2];
+		int tagheader_datasize=tag.TAG_Header.DataSize[0]*65536+tag.TAG_Header.DataSize[1]*256+tag.TAG_Header.DataSize[2];
+		int tagheader_timestamp=tag.TAG_Header.Timestamp[0]*65536+tag.TAG_Header.Timestamp[1]*256+tag.TAG_Header.Timestamp[2];
 
 		char tagtype_str[10];
-		switch(tagheader.TagType){
+		switch(tag.TAG_Header.TagType){
 		case TAG_TYPE_AUDIO:sprintf(tagtype_str,"AUDIO");break;
 		case TAG_TYPE_VIDEO:sprintf(tagtype_str,"VIDEO");break;
 		case TAG_TYPE_SCRIPT:sprintf(tagtype_str,"SCRIPT");break;
@@ -147,7 +154,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 		}
 
 		//process tag by type
-		switch (tagheader.TagType) {
+		switch (tag.TAG_Header.TagType) {
 
 		case TAG_TYPE_AUDIO:{ 
 			char audiotag_str[100]={0};
@@ -210,7 +217,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 			}
 
 			//TagData - First Byte Data
-			int data_size=reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize))-1;
+			int data_size=reverse_bytes((byte *)&tag.TAG_Header.DataSize, sizeof(tag.TAG_Header.DataSize))-1;
 			if(output_a!=0){
 				//TagData+1
 				for (int i=0; i<data_size; i++)
@@ -296,31 +303,37 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 
 
 			//TagData + Previous Tag Size
-			video_count++;
-			int data_size=reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize))+4;
-			if(output_v!=0  ){
-				//TagHeader
-				//fwrite((char *)&tagheader,1, sizeof(tagheader),vfh);
-				tmp_data[0]=tagheader.TagType;
-                tmp_data[1]=tagheader.DataSize[0];
-                tmp_data[2]=tagheader.DataSize[1];
-                tmp_data[3]=tagheader.DataSize[2];
-                tmp_data[4]=tagheader.Timestamp[0];
-                tmp_data[5]=tagheader.Timestamp[1];
-                tmp_data[6]=tagheader.Timestamp[2];
-                tmp_data[7]=0;
-                tmp_data[8]=0;
-                tmp_data[9]=0;
-                tmp_data[10]=0;
-                fwrite(tmp_data,1, 11,vfh);
-				//TagData
-				for (int i=0; i<data_size; i++)
-					fputc(fgetc(ifh),vfh);
-			}else{
-				for (int i=0; i<data_size; i++)
-					fgetc(ifh);
-			}
-			//rewind 4 bytes, because we need to read the previoustagsize again for the loop's sake
+			//TagHeader
+			tmp_data[0]=tag.TAG_Header.TagType;
+            tmp_data[1]=tag.TAG_Header.DataSize[0];
+            tmp_data[2]=tag.TAG_Header.DataSize[1];
+            tmp_data[3]=tag.TAG_Header.DataSize[2];
+            tmp_data[4]=tag.TAG_Header.Timestamp[0];
+            tmp_data[5]=tag.TAG_Header.Timestamp[1];
+            tmp_data[6]=tag.TAG_Header.Timestamp[2];
+            tmp_data[7]=0;
+            tmp_data[8]=0;
+            tmp_data[9]=0;
+            tmp_data[10]=0;
+            fwrite(tmp_data,1, 11,vfh);
+            
+            //tag data
+            video_count++;
+			int data_size=reverse_bytes((byte *)&tag.TAG_Header.DataSize, sizeof(tag.TAG_Header.DataSize));
+            tag.TAG_data_ptr=(char *)malloc(data_size);
+            if(tag.TAG_data_ptr == NULL){
+                printf("malloc tag.TAG_data_ptr failed ,malloc len 0x%x",data_size);
+                return false;
+            }
+            fread(tag.TAG_data_ptr,data_size,1,ifh);  
+            fwrite(tag.TAG_data_ptr,1,data_size,vfh);
+            if(tag.TAG_data_ptr!=NULL)
+                free(tag.TAG_data_ptr);
+
+			// previous tag size
+            fread(tmp_data,1,4,ifh);
+            fwrite(tmp_data,1,4,vfh);
+            
 			fseek(ifh, -4, SEEK_CUR);
 
 			break;
@@ -328,7 +341,7 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 		default:
 
 			//skip the data of this tag
-			fseek(ifh, reverse_bytes((byte *)&tagheader.DataSize, sizeof(tagheader.DataSize)), SEEK_CUR);
+			fseek(ifh, reverse_bytes((byte *)&tag.TAG_Header.DataSize, sizeof(tag.TAG_Header.DataSize)), SEEK_CUR);
             break;
 		}
 
