@@ -156,6 +156,110 @@ int GetAnnexbNALU (NALU_t *nalu){
 	return (pos+rewind);
 }
 
+typedef struct {
+    char config_version;
+    char AVCProfile_indication;
+    char profile_compatibility;
+    char AVCLevel_Indication;
+    char Length_size_minus_one;      //（lengthSizeMinusOne & 3）+1
+    char SPS_num; //E1 -- SPS 的个数，numOfSequenceParameterSets & 0x1F，实际测试时发现总为E1，计算结果为1
+    short SPS_length;    //00 31 -- SPS 的长度，2个字节，计算结果49
+    char SPS_NALU_Units;  //sps 数据，长度为SPS_length
+    char PPS_num;                           //PPS 的个数，实际测试时发现总为E1，计算结果为1
+    short PPS_length;        //PPS 的长度 2个字节
+    char PPS_NALU_Units;    //pps 数据 ，长度为PPS_length
+}AVC_DECODER_CONFIGURATION_RECORD;
+
+/**
+ * Analysis flv tag data to  H.264 Bitstream
+ * @param  h264_url    Location of output H.264 bitstream file.
+ * @param  tagDataPtr 
+  * @param tagDataLen
+ */
+int simplest_flvVideoTag_to_h264(char *h264_url,unsigned char * tagDataPtr ,int tagDataLen,int file_index){
+
+	NALU_t *n;
+	int buffersize=100000;
+    FILE * h264_out=NULL;
+    char avc_str[50]={0,};
+    static AVC_DECODER_CONFIGURATION_RECORD AVC_decoder_config;
+    static int NALU_count=0;;
+
+	//FILE *myout=fopen("output_log.txt","wb+");
+	FILE *myout=stdout;
+
+    //printf("Open file %s\n",url);
+	h264_out=fopen(h264_url, "wb+");
+	if (h264_out==NULL){
+		printf("Open file error\n");
+		return 0;
+	}
+
+    char avc_type=0;
+    int tagData_index=0;
+    unsigned int composition_time=0;
+
+    avc_type=tagDataPtr[tagData_index++];
+    if(avc_type== 0){
+        strcat(avc_str,"    |AVC header");
+        tagData_index+=3;                   //avc type header composition time 0
+        //AVCDecoderconfiguratonRecord
+        AVC_decoder_config.config_version=tagDataPtr[tagData_index++];
+        AVC_decoder_config.AVCProfile_indication=tagDataPtr[tagData_index++];
+        AVC_decoder_config.profile_compatibility=tagDataPtr[tagData_index++];
+        AVC_decoder_config.AVCLevel_Indication=tagDataPtr[tagData_index++];
+        AVC_decoder_config.Length_size_minus_one=(tagDataPtr[tagData_index++]&0x03)+1;
+        AVC_decoder_config.SPS_num=tagDataPtr[tagData_index++]&0x1f;
+        AVC_decoder_config.SPS_length=tagDataPtr[tagData_index++]*0x100+tagDataPtr[tagData_index++];
+        tagData_index+=AVC_decoder_config.SPS_length;
+        AVC_decoder_config.PPS_num=tagDataPtr[tagData_index++];
+        AVC_decoder_config.PPS_length=tagDataPtr[tagData_index++]*0x100+tagDataPtr[tagData_index++];
+        tagData_index+=AVC_decoder_config.PPS_length;
+        
+        fprintf(myout,"%s |config_version:0x%x |AVCProfileIndication:0x%x |profile_compatibility:0x%x |AVCLevel_Indication:0x%x |Length_size_minus_one:0x%x |SPS_num:0x%x |SPS_length:0x%x |PPS_num:0x%x |PPS_length:0x%x"
+                        ,avc_str,AVC_decoder_config.config_version,AVC_decoder_config.AVCProfile_indication
+                        ,AVC_decoder_config.profile_compatibility,AVC_decoder_config.AVCLevel_Indication,AVC_decoder_config.Length_size_minus_one
+                        ,AVC_decoder_config.SPS_num,AVC_decoder_config.SPS_length,AVC_decoder_config.PPS_num,AVC_decoder_config.PPS_length);
+    }
+    else if(avc_type==1){
+        int NALU_LEN;
+        strcat(avc_str,"    |AVC NALU");
+        fprintf(myout,"%s",avc_str);
+        composition_time=(unsigned char)tagDataPtr[tagData_index++]*0x10000+(unsigned char)tagDataPtr[tagData_index++]*0x100+(unsigned char)tagDataPtr[tagData_index++];
+        sprintf(avc_str," |composition_time %6d ",composition_time);
+        fprintf(myout,"%s",avc_str);
+        if(AVC_decoder_config.Length_size_minus_one!=4){
+            printf("avc length size minux one error %d",AVC_decoder_config.Length_size_minus_one);
+        }
+        do{
+            NALU_count++;
+            NALU_LEN=(unsigned char)tagDataPtr[tagData_index++]*0x1000000+(unsigned char)tagDataPtr[tagData_index++]*0x10000+(unsigned char)tagDataPtr[tagData_index++]*0x100+(unsigned char)tagDataPtr[tagData_index++];
+            tagData_index+=NALU_LEN;
+            sprintf(avc_str," |NALU:%d len:0x%x ",NALU_count,NALU_LEN);
+            fprintf(myout,"%s",avc_str);
+        }
+        while(tagData_index<tagDataLen);
+        
+    }
+    else if(avc_type==2){
+        strcat(avc_str,"    |AVC end");
+        fprintf(myout,"%s",avc_str);
+
+    }
+    else{
+        strcat(avc_str,"    |AVC unknown");
+        fprintf(myout,"%s",avc_str);
+    }
+    
+
+
+    if(h264_out!=NULL)
+        fclose(h264_out);
+
+    return true;
+
+}
+
 /**
  * Analysis H.264 Bitstream
  * @param url    Location of input H.264 bitstream file.

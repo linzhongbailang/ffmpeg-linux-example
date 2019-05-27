@@ -55,10 +55,11 @@ typedef struct {
 
 typedef struct {
     TAG_HEADER TAG_Header;
-    char * TAG_data_ptr;            
+    unsigned char * TAG_data_ptr;            
     unsigned int previous_tag_len;
 }TAG;
 
+extern int simplest_flvVideoTag_to_h264(char *h264_url,unsigned char * tagDataPtr ,int tagDataLen,int file_index);
 
 //reverse_bytes - turn a BigEndian byte array into a LittleEndian integer
 uint reverse_bytes(byte *p, char c) {
@@ -279,9 +280,9 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
 					tmp_data[7]=flv.DataOffset>>8;
 					tmp_data[8]=flv.DataOffset;
 					fwrite(tmp_data,1,9,vfh);
-                    printf("flv 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x ",tmp_data[0],
-                        tmp_data[1],tmp_data[2],tmp_data[3],tmp_data[4],tmp_data[5],tmp_data[6],
-                        tmp_data[7],tmp_data[8]);
+                    //printf("flv 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x ",tmp_data[0],
+                    //    tmp_data[1],tmp_data[2],tmp_data[3],tmp_data[4],tmp_data[5],tmp_data[6],
+                    //    tmp_data[7],tmp_data[8]);
                     previoustagsize_z=0;
                     tmp_data[0]=previoustagsize_z>>24;
 					tmp_data[1]=previoustagsize_z>>16;
@@ -320,13 +321,14 @@ int simplest_flv_parser(char *in_url,char * vidoe_out_url,char * audio_out_urtl)
             //tag data
             video_count++;
 			int data_size=reverse_bytes((byte *)&tag.TAG_Header.DataSize, sizeof(tag.TAG_Header.DataSize));
-            tag.TAG_data_ptr=(char *)malloc(data_size);
+            tag.TAG_data_ptr=(unsigned char *)malloc(data_size);
             if(tag.TAG_data_ptr == NULL){
                 printf("malloc tag.TAG_data_ptr failed ,malloc len 0x%x",data_size);
                 return false;
             }
             fread(tag.TAG_data_ptr,data_size,1,ifh);  
             fwrite(tag.TAG_data_ptr,1,data_size,vfh);
+            simplest_flvVideoTag_to_h264("video.h264",tag.TAG_data_ptr+1,data_size-1,ftell(ifh)-data_size+1);
             if(tag.TAG_data_ptr!=NULL)
                 free(tag.TAG_data_ptr);
 
