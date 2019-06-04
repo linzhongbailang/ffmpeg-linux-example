@@ -34,6 +34,7 @@ public:
     int getFrameInterval();
     int get_got_picture();
 
+    cv::Mat *pCvMatYuv422p;
     int m_skippedFrame;
     int Frame_count;
 
@@ -54,6 +55,7 @@ private:
     AVPacket *packet;
 
     cv::Mat *pCvMat;
+    
 
     void init();
     void openDecode();

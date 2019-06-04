@@ -9,11 +9,14 @@ using namespace std;
 
 ffmpegDecode :: ~ffmpegDecode()
 {
+    printf("destory the ffmpegdecode class");
     pCvMat->release();
+    pCvMatYuv422p->release();
     //释放本次读取的帧内存
     av_free_packet(packet);
     avcodec_close(pCodecCtx);
     avformat_close_input(&pFormatCtx);
+    
 }
 
 ffmpegDecode :: ffmpegDecode(char * file)
@@ -24,6 +27,7 @@ ffmpegDecode :: ffmpegDecode(char * file)
     pCodec      = NULL;
 
     pCvMat = new cv::Mat();
+    pCvMatYuv422p= new cv::Mat();
     i=0;
     videoindex=0;
 
@@ -160,6 +164,20 @@ cv::Mat ffmpegDecode :: getDecodedFrame()
                 pCvMat->create(cv::Size(pCodecCtx->width, pCodecCtx->height),CV_8UC3);
             }
 
+            if(pCvMatYuv422p->empty()){
+                pCvMatYuv422p->create(pCodecCtx->height*3/2,pCodecCtx->width,CV_8UC1);
+                printf("yuv mat cols:%d  rows:%d",pCvMatYuv422p->cols,pCvMatYuv422p->rows);
+            }
+            memcpy(pCvMatYuv422p->data,                                         pAvFrame->data[0],pCodecCtx->width*pCodecCtx->height);
+            memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height,      pAvFrame->data[1],pCodecCtx->width*pCodecCtx->height/4);
+            memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height*5/4,  pAvFrame->data[2],pCodecCtx->width*pCodecCtx->height/4);
+
+            cv::Mat rbgimg(pCvMatYuv422p->cols,pCvMatYuv422p->rows,CV_8UC3);
+            cv::cvtColor(*pCvMatYuv422p, rbgimg,CV_YUV2BGR_I420);  //yuv转成rgb
+            imshow("rgbimg_yuv2bgr",rbgimg);
+            //waitKey(30);
+            
+            
             if(img_convert_ctx != NULL)  
             {  
                 get(pCodecCtx, img_convert_ctx, pAvFrame);
@@ -250,30 +268,12 @@ int simplest_ffmpeg_h264_decoder(char * filename_in,char * filename_out){
             }
         }
 
-        //Mat  mat_decoder=NULL;//定义一个Mat变量，用于存储每一帧的图像
         ffmpeg_tao_decoder.getDecodedFrame();
 
         
 
     }
-#if 0
-    video_h264=video_init(filename_in,&ret);
-    if(video_h264==NULL){
-        printf("video init failed ret=%d\n",ret);
-    }
-    
-    video_time=video_get_alltime(video_h264);
-    printf("h264 video time %d s\n",video_time);
 
-    ret=video_get_frame(video_h264,frame_ptr);
-    if(frame_ptr==NULL){
-        printf("video_get_frame failed ret=%d\n",ret);
-    }
-
-    
-        
-    video_uninit(video_h264);
-#endif
 }
 
 

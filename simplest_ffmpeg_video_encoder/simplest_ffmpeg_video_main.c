@@ -65,7 +65,8 @@ int main(int argc, char* argv[]){
     }
 	else if(0==strcmp(argv[1],"h264-decoder")){
         printf("simplest_ffmpeg_h264_decoder test\n");
-	    simplest_ffmpeg_h264_decoder("ds.h264","ds.yuv");
+        simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/cuc_ieschool.flv","ds.yuv");
+	    //simplest_ffmpeg_h264_decoder("ds.h264","ds.yuv");
 	    //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/sintel.h264","ds.yuv");
     }
 	
