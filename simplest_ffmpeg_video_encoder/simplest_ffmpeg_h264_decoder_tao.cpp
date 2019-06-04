@@ -165,16 +165,27 @@ cv::Mat ffmpegDecode :: getDecodedFrame()
             }
 
             if(pCvMatYuv422p->empty()){
-                pCvMatYuv422p->create(pCodecCtx->height*3/2,pCodecCtx->width,CV_8UC1);
-                printf("yuv mat cols:%d  rows:%d",pCvMatYuv422p->cols,pCvMatYuv422p->rows);
+                pCvMatYuv422p->create(pCodecCtx->height*1.5,pCodecCtx->width,CV_8UC1);
+                printf("yuv mat cols:%d  rows:%d\n",pCvMatYuv422p->cols,pCvMatYuv422p->rows);
             }
             memcpy(pCvMatYuv422p->data,                                         pAvFrame->data[0],pCodecCtx->width*pCodecCtx->height);
             memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height,      pAvFrame->data[1],pCodecCtx->width*pCodecCtx->height/4);
             memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height*5/4,  pAvFrame->data[2],pCodecCtx->width*pCodecCtx->height/4);
 
-            cv::Mat rbgimg(pCvMatYuv422p->cols,pCvMatYuv422p->rows,CV_8UC3);
+            //imshow("yuv422.yuv",*pCvMatYuv422p);
+            if(Frame_count==10){
+                printf("save yuv420 %d",Frame_count);
+                FILE * fp=NULL;
+                fp=fopen("10.yuv","wb+");
+                if(fp==NULL)
+                    printf("opencv 10.yuv failed");
+                fwrite(pCvMatYuv422p->data,pCodecCtx->height*pCodecCtx->width,1,fp);
+                fclose(fp);
+            }
+            cv::Mat rbgimg;//(pCodecCtx->height,pCodecCtx->width,CV_8UC3);
             cv::cvtColor(*pCvMatYuv422p, rbgimg,CV_YUV2BGR_I420);  //yuv×ª³Érgb
-            imshow("rgbimg_yuv2bgr",rbgimg);
+            
+            //imshow("rgbimg_yuv2bgr",rbgimg);
             //waitKey(30);
             
             
@@ -229,8 +240,8 @@ void ffmpegDecode :: get(AVCodecContext * pCodecCtx, SwsContext * img_convert_ct
     
     memcpy(pCvMat->data,out_bufferRGB,size);
 
-    imshow("rgbimg",*pCvMat);
-    waitKey(30);
+    //imshow("rgbimg",*pCvMat);
+    //waitKey(30);
     
     Frame_count++;
     printf("frame count:%d\n",Frame_count);
