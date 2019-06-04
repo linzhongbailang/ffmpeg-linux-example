@@ -32,6 +32,8 @@ ffmpegDecode :: ffmpegDecode(char * file)
     img_convert_ctx = NULL;
     y_size = 0;
     packet = NULL;
+    Frame_count=0;
+    m_skippedFrame=0;
 
     if (NULL == file)
     {
@@ -163,6 +165,9 @@ cv::Mat ffmpegDecode :: getDecodedFrame()
                 get(pCodecCtx, img_convert_ctx, pAvFrame);
             }
         }
+        else{
+            m_skippedFrame++;
+        }
     }
     av_free_packet(packet);
 
@@ -206,6 +211,11 @@ void ffmpegDecode :: get(AVCodecContext * pCodecCtx, SwsContext * img_convert_ct
     
     memcpy(pCvMat->data,out_bufferRGB,size);
 
+    imshow("rgbimg",*pCvMat);
+    waitKey(30);
+    
+    Frame_count++;
+    printf("frame count:%d\n",Frame_count);
     delete[] out_bufferRGB;
     av_free(pFrameRGB);
 }
@@ -233,20 +243,17 @@ int simplest_ffmpeg_h264_decoder(char * filename_in,char * filename_out){
     {
         ret=ffmpeg_tao_decoder.readOneFrame();
         if(ret<0){
-            printf("decoder file end\n");
-            break;
+            ffmpeg_tao_decoder.m_skippedFrame--;
+            if(ffmpeg_tao_decoder.m_skippedFrame<0){
+                printf("decoder file end\n");
+                break;
+            }
         }
 
         //Mat  mat_decoder=NULL;//定义一个Mat变量，用于存储每一帧的图像
-        Mat mat_decoder=ffmpeg_tao_decoder.getDecodedFrame();
+        ffmpeg_tao_decoder.getDecodedFrame();
 
-        if(mat_decoder.empty()){
-            printf("mat_decoder empty\n");
-        }
-        else{
-            mat_count++;
-            printf("get mat:%d\n",mat_count);
-        }
+        
 
     }
 #if 0

@@ -32,6 +32,10 @@ public:
     cv::Mat getLastFrame();
     int readOneFrame();
     int getFrameInterval();
+    int get_got_picture();
+
+    int m_skippedFrame;
+    int Frame_count;
 
 private:
     AVFrame *pAvFrame;
@@ -44,6 +48,7 @@ private:
     
     char *filepath;
     int ret, got_picture;
+    ;
     SwsContext *img_convert_ctx;
     int y_size;
     AVPacket *packet;
