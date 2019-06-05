@@ -10,7 +10,7 @@ using namespace std;
 ffmpegDecode :: ~ffmpegDecode()
 {
     printf("destory the ffmpegdecode class");
-    pCvMat->release();
+    pCvMatBGR24->release();
     pCvMatYuv422p->release();
     //释放本次读取的帧内存
     av_free_packet(packet);
@@ -26,14 +26,15 @@ ffmpegDecode :: ffmpegDecode(char * file)
     pCodecCtx   = NULL;
     pCodec      = NULL;
 
-    pCvMat = new cv::Mat();
+    pCvMatBGR24 = new cv::Mat();
     pCvMatYuv422p= new cv::Mat();
     i=0;
     videoindex=0;
 
     ret = 0;
     got_picture = 0;
-    img_convert_ctx = NULL;
+    img_convert_ctx_toBGR24 = NULL;
+    img_convert_ctx_toYUV420=NULL;
     y_size = 0;
     packet = NULL;
     Frame_count=0;
@@ -62,7 +63,7 @@ void ffmpegDecode :: init()
     //这里注册了所有的文件格式和编解码器的库，所以它们将被自动的使用在被打开的合适格式的文件上。注意你只需要调用 av_register_all()一次，因此我们在主函数main()中来调用它。如果你喜欢，也可以只注册特定的格式和编解码器，但是通常你没有必要这样做。
     av_register_all();
 
-    //pFormatCtx = avformat_alloc_context();
+    pFormatCtx = avformat_alloc_context();
     //打开视频文件,通过参数filepath来获得文件名。这个函数读取文件的头部并且把信息保存到我们给的AVFormatContext结构体中。
     //最后2个参数用来指定特殊的文件格式，缓冲大小和格式参数，但如果把它们设置为空NULL或者0，libavformat将自动检测这些参数。
     if(avformat_open_input(&pFormatCtx,filepath,NULL,NULL)!=0)
@@ -153,46 +154,31 @@ cv::Mat ffmpegDecode :: getDecodedFrame()
         if(got_picture)
         {
             //根据编码信息设置渲染格式
-            if(img_convert_ctx == NULL){
-                img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height,
+            if(img_convert_ctx_toBGR24 == NULL){
+                img_convert_ctx_toBGR24 = sws_getContext(pCodecCtx->width, pCodecCtx->height,
                     pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height,
                     AV_PIX_FMT_BGR24, SWS_BICUBIC, NULL, NULL, NULL); 
-            }   
+            } 
+             if(img_convert_ctx_toYUV420 == NULL){
+                img_convert_ctx_toYUV420 = sws_getContext(pCodecCtx->width, pCodecCtx->height,
+                    pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height,
+                    AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL); 
+            }
+             
             //----------------------opencv
-            if (pCvMat->empty())
+            if (pCvMatBGR24->empty())
             {
-                pCvMat->create(cv::Size(pCodecCtx->width, pCodecCtx->height),CV_8UC3);
+                pCvMatBGR24->create(cv::Size(pCodecCtx->width, pCodecCtx->height),CV_8UC3);
             }
 
             if(pCvMatYuv422p->empty()){
                 pCvMatYuv422p->create(pCodecCtx->height*1.5,pCodecCtx->width,CV_8UC1);
-                printf("yuv mat cols:%d  rows:%d\n",pCvMatYuv422p->cols,pCvMatYuv422p->rows);
+                printf("yuv mat cols:%d  rows:%d  pAvFrame format:%d\n",pCvMatYuv422p->cols,pCvMatYuv422p->rows,pAvFrame->format);
             }
-            memcpy(pCvMatYuv422p->data,                                         pAvFrame->data[0],pCodecCtx->width*pCodecCtx->height);
-            memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height,      pAvFrame->data[1],pCodecCtx->width*pCodecCtx->height/4);
-            memcpy(pCvMatYuv422p->data+pCodecCtx->width*pCodecCtx->height*5/4,  pAvFrame->data[2],pCodecCtx->width*pCodecCtx->height/4);
-
-            //imshow("yuv422.yuv",*pCvMatYuv422p);
-            if(Frame_count==10){
-                printf("save yuv420 %d",Frame_count);
-                FILE * fp=NULL;
-                fp=fopen("10.yuv","wb+");
-                if(fp==NULL)
-                    printf("opencv 10.yuv failed");
-                fwrite(pCvMatYuv422p->data,pCodecCtx->height*pCodecCtx->width,1,fp);
-                fclose(fp);
-            }
-            cv::Mat rbgimg;//(pCodecCtx->height,pCodecCtx->width,CV_8UC3);
-            cv::cvtColor(*pCvMatYuv422p, rbgimg,CV_YUV2BGR_I420);  //yuv转成rgb
-            
-            //imshow("rgbimg_yuv2bgr",rbgimg);
-            //waitKey(30);
             
             
-            if(img_convert_ctx != NULL)  
-            {  
-                get(pCodecCtx, img_convert_ctx, pAvFrame);
-            }
+            
+            get(pCodecCtx, pAvFrame);
         }
         else{
             m_skippedFrame++;
@@ -200,7 +186,7 @@ cv::Mat ffmpegDecode :: getDecodedFrame()
     }
     av_free_packet(packet);
 
-    return *pCvMat;
+    return *pCvMatBGR24;
 }
 
 cv::Mat ffmpegDecode :: getLastFrame()
@@ -209,43 +195,76 @@ cv::Mat ffmpegDecode :: getLastFrame()
     if(got_picture) 
     {  
         //根据编码信息设置渲染格式
-        img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL); 
+        img_convert_ctx_toBGR24 = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL); 
 
-        if(img_convert_ctx != NULL)  
+        if(img_convert_ctx_toBGR24 != NULL)  
         {  
-            get(pCodecCtx, img_convert_ctx,pAvFrame);
+            get(pCodecCtx,pAvFrame);
         }  
     } 
-    return *pCvMat;
+    return *pCvMatBGR24;
 }
 
-void ffmpegDecode :: get(AVCodecContext * pCodecCtx, SwsContext * img_convert_ctx, AVFrame * pFrame)
+void ffmpegDecode :: get(AVCodecContext * pCodecCtx, AVFrame * pFrame)
 {
-    if (pCvMat->empty())
+    if (pCvMatBGR24->empty())
     {
-        pCvMat->create(cv::Size(pCodecCtx->width, pCodecCtx->height),CV_8UC3);
+        pCvMatBGR24->create(cv::Size(pCodecCtx->width, pCodecCtx->height),CV_8UC3);
     }
 
+    //YUV to RGB
     AVFrame *pFrameRGB = NULL;
     uint8_t  *out_bufferRGB = NULL;
     pFrameRGB = avcodec_alloc_frame();
-
     //给pFrameRGB帧加上分配的内存;
     int size = avpicture_get_size(AV_PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);
     out_bufferRGB = new uint8_t[size];
-    avpicture_fill((AVPicture *)pFrameRGB, out_bufferRGB, AV_PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);
+    avpicture_fill((AVPicture *)pFrameRGB, out_bufferRGB, AV_PIX_FMT_BGR24, pCodecCtx->width, pCodecCtx->height);   
+    sws_scale(img_convert_ctx_toBGR24, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
+    memcpy(pCvMatBGR24->data,out_bufferRGB,size);
+    imshow("rgbimg",*pCvMatBGR24);
 
-    //YUV to RGB
-    sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
+
+    //YUV to YUV420
+    AVFrame *pFrameYUV420 = NULL;
+    uint8_t  *out_bufferYUV420 = NULL;
+    pFrameYUV420 = avcodec_alloc_frame();
+    //给pFrameRGB帧加上分配的内存;
+    int yuv_size = avpicture_get_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height);
+    out_bufferYUV420 = new uint8_t[yuv_size];
+    avpicture_fill((AVPicture *)pFrameYUV420, out_bufferYUV420, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height);
+    sws_scale(img_convert_ctx_toYUV420, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameYUV420->data, pFrameYUV420->linesize);
+    memcpy(pCvMatYuv422p->data,out_bufferYUV420,yuv_size); 
     
-    memcpy(pCvMat->data,out_bufferRGB,size);
+#if 1
 
-    //imshow("rgbimg",*pCvMat);
+    imshow("yuv422.yuv",*pCvMatYuv422p);
+    if(Frame_count==100){
+        printf("save yuv420 %d",Frame_count);
+        FILE * fp=NULL;
+        fp=fopen("10.yuv","wb+");
+        if(fp==NULL)
+            printf("opencv 10.yuv failed");
+        fwrite(pCvMatYuv422p->data,pCodecCtx->height*1.5*pCodecCtx->width,1,fp);
+        fclose(fp);
+    }
+    cv::Mat rbgimg;//(pCodecCtx->height,pCodecCtx->width,CV_8UC3);
+    cv::cvtColor(*pCvMatYuv422p, rbgimg,CV_YUV2BGR_I420);  //yuv转成rgb
+    
+    imshow("rgbimg_yuv2bgr",rbgimg);
     //waitKey(30);
+    
+#endif
+
+            
+    
+    waitKey(30);
     
     Frame_count++;
     printf("frame count:%d\n",Frame_count);
     delete[] out_bufferRGB;
+    delete[] out_bufferYUV420;
+    
     av_free(pFrameRGB);
 }
 

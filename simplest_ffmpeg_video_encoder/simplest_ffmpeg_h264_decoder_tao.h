@@ -49,18 +49,18 @@ private:
     
     char *filepath;
     int ret, got_picture;
-    ;
-    SwsContext *img_convert_ctx;
+    SwsContext *img_convert_ctx_toYUV420;
+    SwsContext *img_convert_ctx_toBGR24;
     int y_size;
     AVPacket *packet;
 
-    cv::Mat *pCvMat;
-    
+    cv::Mat *pCvMatBGR24;
+        
 
     void init();
     void openDecode();
     void prepare();
-    void get(AVCodecContext *pCodecCtx, SwsContext *img_convert_ctx,AVFrame *pFrame);
+    void get(AVCodecContext *pCodecCtx,AVFrame *pFrame);
 };
 
 #endif
