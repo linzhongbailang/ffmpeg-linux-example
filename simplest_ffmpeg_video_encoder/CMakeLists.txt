@@ -36,6 +36,7 @@ message(STATUS "CMAKE_LD_FLAGS = " ${CMAKE_LD_FLAGS})
 add_executable(simplest_ffmpeg_video_test 			simplest_ffmpeg_video_main.c
 													simplest_ffmpeg_video_encoder_pure.cpp
 													simplest_ffmpeg_h264_decoder_tao.cpp
+													simplest_ffmpeg_rtsp_test.cpp
 													)
 
 
