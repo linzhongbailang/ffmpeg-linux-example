@@ -19,13 +19,15 @@ int simplest_ffmpeg_h264_decoder(char * filename_in,char * filename_out);
     
 int simplest_ffmpeg_rtsp_test(void);
 
+int simplest_ffmpeg_rtsp_server(void);
 
 int main(int argc, char* argv[]){
 
     if(argc<2){
         printf("simplest_video_test h264-encoder\n");
         printf("simplest_video_test h264-decoder\n");
-        printf("simplest_video_test rtsp_test\n");
+        printf("simplest_video_test rtsp-test\n");
+        printf("simplest_video_test rtsp-server\n");
     }
 	//Test
 	//simplest_yuv420_split("lena_256x256_yuv420p.yuv",256,256,1);
@@ -73,14 +75,22 @@ int main(int argc, char* argv[]){
 	    //simplest_ffmpeg_h264_decoder("ds.h264","ds.yuv");
 
 
-        simplest_ffmpeg_h264_decoder("rtsp://184.72.239.149/vod/mp4://BigBuckBunny_175k.mov","ds.yuv");
-	    //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/sintel.h264","ds.yuv");
+        //simplest_ffmpeg_h264_decoder("rtsp://184.72.239.149/vod/mp4://BigBuckBunny_175k.mov","ds.yuv");
+        //simplest_ffmpeg_h264_decoder("rtsp://10.59.8.45:8554/test","ds.yuv");
+	    simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/sintel.h264","ds.yuv");
     }
     else if(0==strcmp(argv[1],"rtsp-test")){
         printf("simplest_ffmpeg_rtsp_test test\n");
         //simplest_ffmpeg_h264_decoder("../../../../../opencv/opencv_extra/testdata/highgui/video/big_buck_bunny.mp4","ds.yuv");
         //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/cuc_ieschool.flv","ds.yuv");
 	    simplest_ffmpeg_rtsp_test();
+	    //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/sintel.h264","ds.yuv");
+    }
+    else if(0==strcmp(argv[1],"rtsp-server")){
+        printf("simplest_ffmpeg_rtsp_server test\n");
+        //simplest_ffmpeg_h264_decoder("../../../../../opencv/opencv_extra/testdata/highgui/video/big_buck_bunny.mp4","ds.yuv");
+        //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/cuc_ieschool.flv","ds.yuv");
+	    simplest_ffmpeg_rtsp_server();
 	    //simplest_ffmpeg_h264_decoder("../../simplest_mediadata_test/sintel.h264","ds.yuv");
     }
     else{

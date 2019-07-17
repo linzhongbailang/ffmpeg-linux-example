@@ -94,6 +94,8 @@ void ffmpegDecode :: openDecode()
             break;
         }
     }
+
+    printf("pFormatCtx->nb_streams %d\n",pFormatCtx->nb_streams);
     if(videoindex==-1)
     {
         printf("Didn't find a video stream.\n");
@@ -236,7 +238,7 @@ void ffmpegDecode :: get(AVCodecContext * pCodecCtx, AVFrame * pFrame)
     sws_scale(img_convert_ctx_toYUV420, pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameYUV420->data, pFrameYUV420->linesize);
     memcpy(pCvMatYuv422p->data,out_bufferYUV420,yuv_size); 
     
-#if 1
+#if 0
 
     imshow("yuv422.yuv",*pCvMatYuv422p);
     if(Frame_count==100){

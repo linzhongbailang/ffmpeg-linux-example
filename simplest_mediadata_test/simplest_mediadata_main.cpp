@@ -203,6 +203,8 @@ int simplest_pcm16le_to_pcm8(char *url);
 int simplest_pcm16le_to_wave(const char *pcmpath,int channels,int sample_rate,const char *wavepath);
 
 
+int simplest_ffmpeg_rtsp_server(void);
+
 
 int main(int argc, char* argv[]){
 
@@ -247,8 +249,8 @@ int main(int argc, char* argv[]){
 	//simplest_pcm16le_to_wave("NocturneNo2inEflat_44.1k_s16le.pcm",2,44100,"output_nocturne.wav");
     else if(0==strcmp(argv[1],"h264-parser")){
         printf("simplest_h264_parser test\n");
-        //simplest_h264_parser("../../simplest_mediadata_test/sintel.h264");
-        simplest_h264_parser("../simplest_ffmpeg_video_encoder/ds.h264");
+        simplest_h264_parser("../../simplest_mediadata_test/sintel.h264");
+        //simplest_h264_parser("../simplest_ffmpeg_video_encoder/ds.h264");
     }
 	else if(0==strcmp(argv[1],"flv-parser")){
         printf("simplest_flv_parser test\n");

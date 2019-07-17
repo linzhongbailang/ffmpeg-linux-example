@@ -37,11 +37,16 @@ add_executable(simplest_ffmpeg_video_test 			simplest_ffmpeg_video_main.c
 													simplest_ffmpeg_video_encoder_pure.cpp
 													simplest_ffmpeg_h264_decoder_tao.cpp
 													simplest_ffmpeg_rtsp_test.cpp
+													rtsp_test/ringfifo.c
+													rtsp_test/rtputils.c
+													rtsp_test/rtspservice.c
+													rtsp_test/rtsputils.c
+													rtsp_test/RT_Gree_rtsp.c
 													)
 
 
 
-target_link_libraries(simplest_ffmpeg_video_test ${PKGS_LDFLAGS})
+target_link_libraries(simplest_ffmpeg_video_test ${PKGS_LDFLAGS} -lpthread)
 
 
 
