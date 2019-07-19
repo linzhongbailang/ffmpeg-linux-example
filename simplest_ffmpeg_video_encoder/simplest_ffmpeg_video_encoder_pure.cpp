@@ -70,7 +70,6 @@ using namespace std;
 using namespace cv;
 
 
-queue <int > queue_test;
 
 //定义类模板
 template <class numtype>
@@ -116,7 +115,8 @@ public:
     int Put_frame(unsigned char * buf_ptr,unsigned int data_len);
     int Put_frame(Mat mat);
     int Get_frame(unsigned char * buf_ptr);    
-    int frame_num(void);    
+    int frame_num(void);
+    int Empty(void);
     enum AVPixelFormat pix_fmt;
     int cows;
     int rows;
@@ -132,6 +132,7 @@ public:
     //queue<int> frame_data;
 private:
     queue<FRAME_DATA> frame_data_queue;
+    queue <int > queue_test;
     unsigned int frame_count;
 
     int reserve;
@@ -174,7 +175,7 @@ int Cmux_source_filter::Put_frame(unsigned char * buf_ptr,unsigned int data_len)
     }
     //frame_data_queue.push(frame_data_temp);
 
-    queue_test.push(1);
+    queue_test.push(frame_count);
     return 1;
 }
 int Cmux_source_filter::Put_frame(Mat mat)
@@ -209,14 +210,14 @@ int Cmux_source_filter::Put_frame(Mat mat)
 int Cmux_source_filter::Get_frame(unsigned char * buf_ptr)
 {
     std::lock_guard<std::mutex> lk(mut);
-    printf ("mux_source_filter::Get_frame \n");
-    FRAME_DATA frame_data_temp;
+    //printf ("mux_source_filter::Get_frame \n");
+    //FRAME_DATA frame_data_temp;
     //frame_data_temp=frame_data_queue.front();
     //memcpy(buf_ptr,frame_data_temp.data_ptr,frame_data_temp.data_len);
     //free(frame_data_temp.data_ptr); 
     //frame_data_queue.pop();
     queue_test.pop();
-    printf("get frame %d\n",frame_data_temp.frame_index);
+    printf("get frame \n");
     //frame_data.frame_index++;
     return 1;
 
@@ -229,6 +230,15 @@ int Cmux_source_filter::frame_num(void)
     return queue_test.size();
 
 }
+int Cmux_source_filter::Empty(void)
+{
+    std::lock_guard<std::mutex> lk(mut);
+    //printf ("mux_source_filter::frame_num \n");
+    //return frame_data_queue.size();
+    return queue_test.empty();
+
+}
+
 
 
 Cmux_source_filter * mux_source_filter;
@@ -283,9 +293,9 @@ void mux_source_thread_main()
         index++;
         //if(index%10 == 0)
             //mux_source_filter->Put_frame(image);
-            //mux_source_filter->Put_frame(image.data,image.cols*image.rows*2);
-            queue_test.push(index);
-        cout << "push " << index << endl;
+            mux_source_filter->Put_frame(image.data,image.cols*image.rows*2);
+            //queue_test.push(index);
+        //cout << "push " << index << endl;
     }
 
     image.release();
@@ -455,7 +465,7 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
 
 	int in_w=480,in_h=272;	
 	int framenum=100;	
-    unsigned char * FrameData;
+    unsigned char * frame_data;
 
     cout<< "start main thread, thread id : " << this_thread::get_id() << endl;
     mux_source_filter = new Cmux_source_filter();
@@ -464,23 +474,37 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
     
     do{
     
-        //if(mux_source_filter->frame_num()){
-        //    cout << " get source frame"<< endl;
-        //    break;
-        //}
-        if(!(queue_test.empty()))
-        {
-            i = queue_test.front();
-            queue_test.pop();
-            cout << "pop " << i <<endl;
+        if(!(mux_source_filter->Empty())){
+            cout << " get source frame"<< endl;
+            break;
         }
+        //if(!(queue_test.empty()))
+        //{
+        //    i = queue_test.front();
+        //    queue_test.pop();
+        //    cout << "pop " << i <<endl;
+        //}
         this_thread::sleep_for(chrono:: milliseconds (1)); 
 
     }while(1);
 
+    //for (i = 0; i < framenum; i++) 
+    for (;;) 
+    {
+        //this_thread::sleep_for(chrono::seconds(2));
+        if(!(mux_source_filter->Empty())){
+            
+            mux_source_filter->Get_frame(frame_data);
+            //simplest_ffmpeg_video_yuv420_to_h264(frame_data);
+            //cout<< "mux_source_filter frame : "<<mux_source_filter->frame_num() << endl;
+        }
+        else
+            this_thread::sleep_for(chrono:: milliseconds (1));
+    }
+    
     
     simplest_ffmpeg_video_yuv420_to_h264_init(mux_source_filter->cows,mux_source_filter->rows,filename_out);
-    unsigned char * frame_data;
+    
     frame_data=(unsigned char *)malloc(mux_source_filter->cows*mux_source_filter->rows*2);
     if(frame_data==NULL){
 
@@ -489,18 +513,7 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
         return 0;
     }
 
-    for (i = 0; i < framenum; i++) 
-    {
-        //this_thread::sleep_for(chrono::seconds(2));
-        if(mux_source_filter->frame_num()){
-            
-            mux_source_filter->Get_frame(frame_data);
-            //simplest_ffmpeg_video_yuv420_to_h264(frame_data);
-            cout<< "mux_source_filter frame : "<<mux_source_filter->frame_num() << endl;
-        }
-        else
-            this_thread::sleep_for(chrono:: milliseconds (1));
-    }
+    
 
     free(frame_data) ;
 
@@ -508,7 +521,7 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
     simplest_ffmpeg_video_yuv420_to_h264_exit();
 
     return 1;
-
+#if 0
 	//Input raw data
 	fp_in = fopen(filename_in, "rb");
 	if (!fp_in) {
@@ -543,6 +556,7 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
     if(fp_in!=NULL)
         fclose(fp_in);
 	return 0;
+#endif
 }
 
 }
