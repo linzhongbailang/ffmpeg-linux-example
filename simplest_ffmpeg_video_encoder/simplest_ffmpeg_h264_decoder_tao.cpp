@@ -30,6 +30,7 @@ ffmpegDecode :: ffmpegDecode(char * file)
     pCvMatYuv422p= new cv::Mat();
     i=0;
     videoindex=0;
+    camera_flag =1;
 
     ret = 0;
     got_picture = 0;
@@ -66,12 +67,27 @@ void ffmpegDecode :: init()
     pFormatCtx = avformat_alloc_context();
     //打开视频文件,通过参数filepath来获得文件名。这个函数读取文件的头部并且把信息保存到我们给的AVFormatContext结构体中。
     //最后2个参数用来指定特殊的文件格式，缓冲大小和格式参数，但如果把它们设置为空NULL或者0，libavformat将自动检测这些参数。
-    if(avformat_open_input(&pFormatCtx,filepath,NULL,NULL)!=0)
-    {
-        printf("无法打开文件\n");
-        return;
+    if(camera_flag==1){
+        printf("open the /dev/video0 11111\n");
+        AVInputFormat *ifmt=av_find_input_format("video4linux2"); 
+        if(ifmt==NULL)
+        {
+            printf("Couldn't find input camera\n");
+            return ;
+        }
+    	if(avformat_open_input(&pFormatCtx,"/dev/video0",ifmt,NULL)!=0){  
+    		printf("Couldn't open input stream.\n");  
+    		return ;  
+    	}
     }
-
+    else {
+        
+        if(avformat_open_input(&pFormatCtx,filepath,NULL,NULL)!=0)
+        {
+            printf("无法打开文件\n");
+            return;
+        }
+    }
     //查找文件的流信息,avformat_open_input函数只是检测了文件的头部，接着要检查在文件中的流的信息
     //if(av_find_stream_info(pFormatCtx)<0)
     if(avformat_find_stream_info(pFormatCtx,NULL))

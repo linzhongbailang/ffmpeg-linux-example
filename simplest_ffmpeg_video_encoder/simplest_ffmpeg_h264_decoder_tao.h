@@ -46,6 +46,7 @@ private:
 
     int i; 
     int videoindex;
+    int camera_flag;
     
     char *filepath;
     int ret, got_picture;

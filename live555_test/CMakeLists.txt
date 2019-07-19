@@ -22,7 +22,7 @@ include_directories(${PKGS_INCLUDE_DIRS})
 link_directories(${PKGS_LIBRARY_DIRS})
 
 #set(CMAKE_C_FLAGS "-pie -fPIE -fpermissive-o")
-
+set(CMAKE_CXX_FLAGS " -std=c++11")
 
 
 
