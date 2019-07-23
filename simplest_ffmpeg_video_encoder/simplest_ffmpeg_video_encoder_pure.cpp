@@ -261,9 +261,10 @@ void mux_source_thread_main()
     unsigned int Fourcc_32;
     
     timeval ts;
-    
+    //capture.set(CAP_PROP_FOURCC,CV_CAP_MODE_GRAY);
     cout<< "start mux_source_thread_main, thread id : " << this_thread::get_id() << endl;
         
+    
 
 	cout<<"fps "<<setw(5)<<capture.get(CAP_PROP_FPS)<<endl;
     Fourcc_32=capture.get(CAP_PROP_FOURCC);
@@ -292,13 +293,135 @@ void mux_source_thread_main()
 
     Mat image;
     int index=0;
+    
     //for (unsigned i = 0; i < capture.get(CAP_PROP_FRAME_COUNT); i++)
     for(;;)
     {
         //gettimeofday(&ts,NULL);
         //cout << ts.tv_sec << "  " <<ts.tv_usec << endl;
         capture>>image;
+
+        cout<< " x y :" << image.cols << " " << image.rows << " type "<< image.type() \
+            << "channels: "<< image.channels() <<"dims :" << image.dims  <<"size :" << image.size \
+            << "elemSize:" <<image.elemSize()<<endl;
+
+        
+            
         index++;
+        if(index==30)
+        {   
+            FILE *fp_yuv444p;
+            FILE *fp_yuv420p;
+            int index_y = 0;  
+            int index_u = 0;  
+            int index_v = 0; 
+            unsigned char * yuv444p_data;
+            unsigned char * yuv420p_data;
+            unsigned char * y_data;
+            unsigned char * u_data;
+            unsigned char * v_data;
+            int number_of_uchar=0;
+            int data_length;
+            uchar* data=image.ptr<uchar>(0);
+            
+            yuv444p_data=(unsigned char *)malloc(wed*hight*3);
+            if(yuv444p_data==NULL){
+                cout<< "yuv422_data malloc failed" <<endl;    
+                break;
+            }
+            if(image.isContinuous())
+                cout << " image is continuous"<<endl;
+
+            
+            
+            //save yuv444p
+            memset(yuv444p_data,0,wed*hight*3);
+            y_data=yuv444p_data;
+            u_data=yuv444p_data+wed*hight;
+            v_data=yuv444p_data+wed*hight*2;
+            cout<< "save the 30th yuv444p image" <<endl;
+            //Output bitstream
+        	fp_yuv444p = fopen("yuv444p_30th_1.yuv", "wb");
+        	if (!fp_out) {
+        		printf("Could not open %s\n", "yuv444p_30th_1.yuv");
+           	}
+            else
+            {
+                data_length=image.rows*image.cols*image.channels();
+                number_of_uchar=image.elemSize();
+                if(image.isContinuous())
+                    cout << "image isContinuous +++++++++++++++++++++++++++++++++++++++++++" <<endl;
+                for (int i = 0; i< data_length; i = i + number_of_uchar)
+                {
+                    //data[i] = 255;
+                    //data[i+1] = 0;
+                    //data[i+2] = 0;//这里我们认为图像是彩色的三通道，所以对每个像素的BGR通道分别进行单独操作
+                    *(y_data+ (index_y++)) = data[i];
+                    *(u_data + (index_u++)) = data[i+1]; 
+                    *(v_data + (index_v++)) = data[i+2];  
+                }
+
+                //memcpy(yuv422_data,data,wed*hight*3);
+                fwrite(yuv444p_data, 1, wed*hight*3, fp_yuv444p);
+                //fwrite(image.data+wed*hight, 1, wed*hight/2, fp_yuv420p);
+                //fwrite(image.data+wed*hight*3/2, 1, wed*hight/2, fp_yuv420p);
+                fclose(fp_yuv444p);
+
+            }
+
+            //save yuv420p
+            yuv420p_data=(unsigned char *)malloc(wed*hight*3/2);
+            if(yuv420p_data==NULL){
+                cout<< "yuv420p_data malloc failed" <<endl;    
+                break;
+            }
+            memset(yuv420p_data,0,wed*hight*3/2);
+            y_data=yuv420p_data;
+            u_data=yuv420p_data+wed*hight;
+            v_data=yuv420p_data+wed*hight*5/4;
+            index_y = 0;  
+            index_u = 0;  
+            index_v = 0; 
+            cout<< "save the 30th yuv420 image" <<endl;
+            //Output bitstream
+        	fp_yuv420p = fopen("yuv420p_30th_1.yuv", "wb");
+        	if (!fp_out) {
+        		printf("Could not open %s\n", "yuv420p_30th.yuv");
+           	}
+            else
+            {
+                data_length=image.rows*image.cols*image.channels();
+                number_of_uchar=image.elemSize();
+                if(image.isContinuous())
+                    cout << "image isContinuous +++++++++++++++++++++++++++++++++++++++++++" <<endl;
+                for (int i = 0; i< data_length; i = i + number_of_uchar)
+                {
+                    //data[i] = 255;
+                    //data[i+1] = 0;
+                    //data[i+2] = 0;//这里我们认为图像是彩色的三通道，所以对每个像素的BGR通道分别进行单独操作
+                    *(y_data+ (index_y++)) = data[i];
+                    if(i/number_of_uchar/image.cols%2==0)
+                    {
+                        if(i/number_of_uchar%image.cols%2==0)
+                        {
+                            *(u_data + (index_u++)) = data[i+1]; 
+                            *(v_data + (index_v++)) = data[i+2];
+                        }
+                    }
+                }
+
+                //memcpy(yuv422_data,data,wed*hight*3);
+                fwrite(yuv420p_data, 1, wed*hight*3/2, fp_yuv420p);
+                //fwrite(image.data+wed*hight, 1, wed*hight/2, fp_yuv420p);
+                //fwrite(image.data+wed*hight*3/2, 1, wed*hight/2, fp_yuv420p);
+                fclose(fp_yuv420p);
+
+            }
+
+    
+
+        }
+        
         //if(index%10 == 0)
             //mux_source_filter->Put_frame(image);
             mux_source_filter->Put_frame(image.data,image.cols*image.rows*2);
@@ -378,18 +501,24 @@ int yuyv_to_yuv420p(int width,int height,unsigned char * yuyv_data,unsigned char
     //unsigned char * y_data=yuv420p_data;
     //unsigned char * u_data=yuv420p_data+width*height;
     //unsigned char * v_data=yuv420p_data+width*height*5/4;
-    cout << "yuyv_to_yuv420p x y "<< width << height <<endl;
+    cout << "yuyv_to_yuv420p x y "<< width << " x "<< height <<endl;
+
+#if 0
     for(int i = 0; i < num; i = i+4)  
     {  
         *(y_data+ (index_y++)) = *(yuyv_data + i);
-        if(i/width%2==0)
-            *(u_data+ (index_u++)) = *(yuyv_data + i + 1);   
+        //if(i/(width*4)%2==0)
+         //   *(u_data+ (index_u++)) = *(yuyv_data + i + 1);   
         
         *(y_data+ (index_y++)) = *(yuyv_data + i + 2); 
-        if(i/width%2==0)
-            *(v_data + (index_v++)) = *(yuyv_data + i + 3); 
+        //if(i/(width*4)%2==0)
+         //   *(v_data + (index_v++)) = *(yuyv_data + i + 3); 
     }  
-
+#else
+    memcpy(y_data,yuyv_data,width*height);
+    //memcpy(u_data,yuyv_data+width*height,width*height/4);
+    //memcpy(v_data,yuyv_data+width*height*5/4,width*height/4);
+#endif
     return 1;
 
 }
@@ -405,6 +534,29 @@ int simplest_ffmpeg_video_yuv420_to_h264(unsigned char * Frame_data_ptr)
     yuyv_to_yuv420p(pCodecCtx->width , pCodecCtx->height,Frame_data_ptr,pFrame->data[0],pFrame->data[1],pFrame->data[2]);
   
     Frame_index++;
+
+    //if(Frame_index==30)
+    if(0)
+    {
+        
+        FILE *fp_yuv420p;
+        cout<< "save the 30th yuv420 image" <<endl;
+        //Output bitstream
+    	fp_yuv420p = fopen("yuv420p_30th.yuv", "wb");
+    	if (!fp_out) {
+    		printf("Could not open %s\n", "yuv420p_30th.yuv");
+       	}
+        else
+        {
+            fwrite(pFrame->data[0], 1, pCodecCtx->width*pCodecCtx->height, fp_yuv420p);
+            fwrite(pFrame->data[1], 1, pCodecCtx->width*pCodecCtx->height/4, fp_yuv420p);
+            fwrite(pFrame->data[2], 1, pCodecCtx->width*pCodecCtx->height/4, fp_yuv420p);
+            fclose(fp_yuv420p);
+
+        }
+            
+
+    }
     
     pFrame->pts = Frame_index;
     /* encode the image */
