@@ -627,6 +627,52 @@ int simplest_ffmpeg_video_yuv420_to_h264_exit(void)
 extern "C"
 {
 
+void yuv420pvideo_capture_yuv420p(void)
+{
+    char filename_in[]="../../simplest_ffmpeg_video_encoder/ds_480x272.yuv";
+
+    char filename_out[]="ds_480x272_image.yuv420";
+
+    //Input raw data
+	FILE *fp_in = fopen(filename_in, "rb");
+	if (!fp_in) {
+		printf("Could not open %s\n", filename_in);
+		return ;
+	}
+	FILE *fp_out = fopen(filename_out, "wb");
+	if (!fp_in) {
+		printf("Could not open %s\n", filename_out);
+		return ;
+	}
+    
+	int y_size =480 * 272;
+    
+    unsigned char *FrameData=(unsigned char *)malloc(y_size*3/2);
+    if(FrameData==NULL){
+        printf("Could malloc FrameData LEN %d\n", y_size*3/2);
+        return ;
+    }
+    //read 
+    cout << "read file" <<endl;
+    fread(FrameData,1,y_size,fp_in);	        // Y
+	fread(FrameData+y_size,1,y_size/4,fp_in);  // U
+	fread(FrameData+y_size*5/4,1,y_size/4,fp_in);	// V
+    //write
+    cout<< "write file" <<endl;
+    fwrite(FrameData,1,y_size*3/2,fp_out);
+            
+ 
+    free(FrameData);
+    
+    
+    
+    if(fp_in!=NULL)
+        fclose(fp_in);
+    if(filename_out!=NULL)
+        fclose(fp_out);
+
+}
+
 int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
 {
     int i, ret, got_output;
@@ -635,11 +681,10 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
 	int y_size;
 	//int framecnt=0;
 
-	//char filename_in[]="../../simplest_ffmpeg_video_encoder/ds_480x272.yuv";
+	
 
-    //char filename_out[]="ds_1.h264";
-
-
+    //yuv420pvideo_capture_yuv420p();
+    //return 1;
 
 	int in_w=480,in_h=272;	
 	int framenum=100;	
