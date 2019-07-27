@@ -699,6 +699,18 @@ void mux_source_thread_main()
     //CLEAR (buf);
     buf.type =V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory =V4L2_MEMORY_MMAP;
+
+    //
+    mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
+    mux_source_filter->cows=640;
+    mux_source_filter->rows=480;
+    unsigned char * yuv420p_data; 
+
+    yuv420p_data=(unsigned char *)malloc(640*480*3/2);
+    if(yuv420p_data==NULL){
+        cout<< "yuv420p_data malloc failed" <<endl;    
+    }
+    
     while(1)
     {
         
@@ -771,6 +783,20 @@ void mux_source_thread_main()
             }
         }
         //process_image(buffers[buf.index].start);
+        
+    
+   
+        
+        //if(index%10 == 0)
+            //mux_source_filter->Put_frame(image);
+        yuv422_to_yuv420p( (unsigned char *)buffers[buf.index].start,yuv420p_data);
+        mux_source_filter->Put_frame(yuv420p_data,640*480*3/2);
+            //queue_test.push(index);
+        //cout << "push " << index << endl;
+   
+
+
+        
         cout << "frame len:" << buffers[buf.index].length << endl;
         // 将取出的缓冲帧放回缓冲区
         ioctl (fd, VIDIOC_QBUF,&buf);
@@ -826,7 +852,7 @@ void mux_source_thread_main()
     }
 #endif 
 
-    
+    free(yuv420p_data);
     close(fd); // 关闭设备
 #if 0
     cout<< "start mux_source_thread_main, thread id : " << this_thread::get_id() << endl;
@@ -983,8 +1009,10 @@ int simplest_ffmpeg_video_yuv420_to_h264(unsigned char * Frame_data_ptr)
     av_init_packet(&pkt);
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
-    yuyv_to_yuv420p(pCodecCtx->width , pCodecCtx->height,Frame_data_ptr,pFrame->data[0],pFrame->data[1],pFrame->data[2]);
-  
+    //yuyv_to_yuv420p(pCodecCtx->width , pCodecCtx->height,Frame_data_ptr,pFrame->data[0],pFrame->data[1],pFrame->data[2]);
+    memcpy(pFrame->data[0],Frame_data_ptr,y_size);
+    memcpy(pFrame->data[1],Frame_data_ptr+y_size,y_size/4);
+    memcpy(pFrame->data[2],Frame_data_ptr+y_size*5/4,y_size/4);
     Frame_index++;
 
     //if(Frame_index==30)
@@ -1143,7 +1171,7 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
 
     
     simplest_ffmpeg_video_yuv420_to_h264_init(mux_source_filter->cows,mux_source_filter->rows,filename_out);
-    frame_data=(unsigned char *)malloc(mux_source_filter->cows*mux_source_filter->rows*2);
+    frame_data=(unsigned char *)malloc(mux_source_filter->cows*mux_source_filter->rows*3/2);
     if(frame_data==NULL){
 
     
