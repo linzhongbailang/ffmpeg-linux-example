@@ -358,6 +358,51 @@ void yuv422_to_yuv422p(unsigned char *yuv422_data_src,unsigned char *yuv422p_dat
     
 }
 
+void yuv422_to_yuv420p(unsigned char *yuv422_data_src,unsigned char *yuv420p_data_dst)
+{
+    
+    int index_y = 0;  
+    int index_u = 0;  
+    int index_v = 0; 
+    unsigned char * y_data;
+    unsigned char * u_data;
+    unsigned char * v_data;
+    int wid=640;
+    int height=480;
+
+    //uchar* data=image.ptr<uchar>(0);
+    
+
+    memset(yuv420p_data_dst,0,wid*height*3/2);
+    y_data=yuv420p_data_dst;
+    u_data=yuv420p_data_dst+wid*height;
+    v_data=yuv420p_data_dst+wid*height*5/4;
+    //data_length=image.rows*image.cols*image.channels();
+    //number_of_uchar=image.elemSize();
+    for (int i = 0; i< wid*height*2; i = i + 4)
+    {
+        *(y_data+ (index_y++)) = yuv422_data_src[i];
+        *(y_data+ (index_y++)) = yuv422_data_src[i+2];
+
+        if(i/2/640%2==0)
+        {
+            *(u_data + (index_u++)) = yuv422_data_src[i+1]; 
+            *(v_data + (index_v++)) = yuv422_data_src[i+3]; 
+        }
+        //if(i%2==0)
+        //{
+        
+        //}
+        //else 
+        //{
+        //*(v_data + (index_v++)) = yuv422_data_src[i+3];  
+        //}
+    }
+    
+    
+
+    
+}
 
 void mat_to_yuv420p(Mat image,unsigned char *yuv420p_data)
 {
@@ -700,7 +745,30 @@ void mux_source_thread_main()
                 fclose(fp_yuv422p);
 
             }
-            
+
+            //save yuv420p image
+            FILE *fp_yuv420p;       
+            cout<< "save the 10th yuv420p image" <<endl;
+            fp_yuv420p = fopen("yuv420p_10th_640x480.yuv", "wb");
+        	if (!fp_yuv420p) {
+        		printf("Could not open %s\n", "yuv420p_10th_640x480.yuv");
+           	}
+            else
+            {
+                unsigned char * yu420p_buff = (unsigned char *) malloc(buffers[buf.index].length*3/4);
+                if(yu420p_buff == NULL)
+                {
+                    cout << "malloc yuv422p_buff failed" << endl;
+                }
+                else
+                {
+                    yuv422_to_yuv420p( (unsigned char *)buffers[buf.index].start,yu420p_buff);
+                    fwrite(yu420p_buff, 1,buffers[buf.index].length*3/4, fp_yuv420p);
+                }
+                free(yu420p_buff);
+                fclose(fp_yuv420p);
+
+            }
         }
         //process_image(buffers[buf.index].start);
         cout << "frame len:" << buffers[buf.index].length << endl;
