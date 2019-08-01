@@ -42,7 +42,10 @@ add_executable(simplest_ffmpeg_video_test 			simplest_ffmpeg_video_main.c
 													rtsp_test/rtspservice.c
 													rtsp_test/rtsputils.c
 													rtsp_test/RT_Gree_rtsp.c
-													)
+													../util/CPictureFormatConversion.cpp
+													encoder_src_filter.cpp
+													camera_src_filter.cpp										
+			)
 
 
 
