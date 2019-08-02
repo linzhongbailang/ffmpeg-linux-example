@@ -109,7 +109,7 @@ Cmux_source_filter::~Cmux_source_filter(void)
 int Cmux_source_filter::Put_frame(unsigned char * buf_ptr,unsigned int data_len)
 {
     std::lock_guard<std::mutex> lk(mut);
-    printf ("mux_source_filter::Put_frame  data len%d\n",data_len);
+    
     FRAME_DATA frame_data_temp;
     frame_count++;
     frame_data_temp.frame_index=frame_count;
@@ -125,6 +125,7 @@ int Cmux_source_filter::Put_frame(unsigned char * buf_ptr,unsigned int data_len)
         }
         memcpy(frame_data_temp.data_ptr,buf_ptr,data_len);
         frame_data_temp.data_len=data_len;
+        printf ("mux_source_filter::Put_frame  data len%d\n",data_len);
     }
 #endif
     frame_data_queue.push(frame_data_temp);
@@ -218,9 +219,10 @@ void mux_source_thread_main(void)
     Ccamera_src_filter * camera_src_filter = new Ccamera_src_filter();
     
 
-    camera_src_filter->init_camera_device();
+    camera_src_filter->open_device();
     
-    camera_src_filter->init_mmap();
+    camera_src_filter->init_device();
+    camera_src_filter->start_capturing();
 
  
     mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
@@ -235,116 +237,18 @@ void mux_source_thread_main(void)
     
     while(1)
     {
+        camera_src_filter->read_frame(yuv420p_data);
+        //memset (yuv420p_data,21,640*480*3/2);
+        mux_source_filter->Put_frame(yuv420p_data,640*480*3/2);      
         
-        camera_src_filter->read_frame(yuv420p_data,640*480*3/2);
-        mux_source_filter->Put_frame(yuv420p_data,640*480*3/2);        
-        
-    }
-#if 0
-    //显示所有支持帧格式
-    fmtdesc.index=0;
-    fmtdesc.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    printf("Support format:\n");
-    while(ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc)!=-1)
-    {
-        printf("\t%d.%s\n",fmtdesc.index+1,fmtdesc.description);
-        fmtdesc.index++;
     }
 
-    //检查是否支持某帧格式
-    struct v4l2_format fmt_test;
-    fmt_test.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt_test.fmt.pix.pixelformat=V4L2_PIX_FMT_RGB32;
-    if(ioctl(fd,VIDIOC_TRY_FMT,&fmt_test)==-1)
-    {
-        printf("not support format RGB32!\n");      
-    }
-    else
-    {
-        printf("support format RGB32\n");
-    }
-
-    //检查是否支持某帧格式
-    //struct v4l2_format fmt_test;
-    fmt_test.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt_test.fmt.pix.pixelformat=V4L2_PIX_FMT_YUYV;
-    if(ioctl(fd,VIDIOC_TRY_FMT,&fmt_test)==-1)
-    {
-        printf("not support format YUYV!\n");      
-    }
-    else
-    {
-        printf("support format YUYV\n");
-    }
-
-    
-    fmt_test.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt_test.fmt.pix.pixelformat=V4L2_PIX_FMT_YUV420M;
-    if(ioctl(fd,VIDIOC_TRY_FMT,&fmt_test)==-1)
-    {
-        printf("not support format YUV420P!\n");      
-    }
-    else
-    {
-        printf("support format YUV420P\n");
-    }
-#endif 
 
     free(yuv420p_data);
-    camera_src_filter->release_devuce();
-#if 0
-    cout<< "start mux_source_thread_main, thread id : " << this_thread::get_id() << endl;
-    if(!capture.isOpened()){
-        cout<<"capture open failed"<<endl;
-        return ;
-    }
-    mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
-    mux_source_filter->cows=wed;
-    mux_source_filter->rows=hight;
-    
-    cout<<"cows "<<mux_source_filter->cows << "rows "<<mux_source_filter->rows<<endl;
-    //
-    //writer = VideoWriter(video_name, -1, capture.get(CAP_PROP_FPS), Size(wed,hight), 0);
-    //写入的对象，保持原来的帧率和大小。
-    //writer.open(video_name,capture.get(CAP_PROP_FOURCC), capture.get(CAP_PROP_FPS), Size(wed, hight), true);  
-    //writer.open(video_name, CV_FOURCC('M', 'P', '4', '2'), capture.get(CAP_PROP_FPS),Size(wed, hight), true);  
-    //writer.open(video_name, CV_FOURCC('H', '2', '6', '4'), capture.get(CAP_PROP_FPS),Size(wed, hight), true);  
-    
+    camera_src_filter->start_capturing();
+    camera_src_filter->uninit_device();
+    camera_src_filter->close_device();
 
-    Mat image;
-    int index=0;
-    unsigned char * yuv420p_data; 
-
-    yuv420p_data=(unsigned char *)malloc(wed*hight*3/2);
-    if(yuv420p_data==NULL){
-        cout<< "yuv420p_data malloc failed" <<endl;    
-    }
-    
-    //for (unsigned i = 0; i < capture.get(CAP_PROP_FRAME_COUNT); i++)
-    for(;;)
-    {
-        //gettimeofday(&ts,NULL);
-        //cout << ts.tv_sec << "  " <<ts.tv_usec << endl;
-        capture>>image;
-
-        cout<< " x y :" << image.cols << " " << image.rows << " type "<< image.type() \
-            << "channels: "<< image.channels() <<"dims :" << image.dims  <<"size :" << image.size \
-            << "elemSize:" <<image.elemSize()<<endl;
-
-        
-            
-        mat_to_yuv420p(image,yuv420p_data);
-        
-        //if(index%10 == 0)
-            //mux_source_filter->Put_frame(image);
-            
-            mux_source_filter->Put_frame(yuv420p_data,image.cols*image.rows*3/2);
-            //queue_test.push(index);
-        //cout << "push " << index << endl;
-    }
-
-    image.release();
-#endif
 }
 
 

@@ -335,15 +335,9 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
     do{
     
         if(!(mux_source_filter->Empty())){
-            cout << " get source frame"<< endl;
+            cout << "start  get source frame"<< endl;
             break;
         }
-        //if(!(queue_test.empty()))
-        //{
-        //    i = queue_test.front();
-        //    queue_test.pop();
-        //    cout << "pop " << i <<endl;
-        //}
         this_thread::sleep_for(chrono:: milliseconds (1)); 
 
     }while(1);

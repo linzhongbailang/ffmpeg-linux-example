@@ -35,13 +35,13 @@ message(STATUS "CMAKE_LD_FLAGS = " ${CMAKE_LD_FLAGS})
 
 add_executable(simplest_ffmpeg_video_test 			simplest_ffmpeg_video_main.c
 													simplest_ffmpeg_video_encoder_pure.cpp
-													simplest_ffmpeg_h264_decoder_tao.cpp
-													simplest_ffmpeg_rtsp_test.cpp
-													rtsp_test/ringfifo.c
-													rtsp_test/rtputils.c
-													rtsp_test/rtspservice.c
-													rtsp_test/rtsputils.c
-													rtsp_test/RT_Gree_rtsp.c
+													#simplest_ffmpeg_h264_decoder_tao.cpp
+													#simplest_ffmpeg_rtsp_test.cpp
+													#rtsp_test/ringfifo.c
+													#rtsp_test/rtputils.c
+													#rtsp_test/rtspservice.c
+													#rtsp_test/rtsputils.c
+													#rtsp_test/RT_Gree_rtsp.c
 													../util/CPictureFormatConversion.cpp
 													encoder_src_filter.cpp
 													camera_src_filter.cpp										
