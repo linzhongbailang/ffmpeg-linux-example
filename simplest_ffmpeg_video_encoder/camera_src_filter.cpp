@@ -131,8 +131,8 @@ int Ccamera_src_filter::read_frame(unsigned char * yuv420p_data) {
         r = select(fd + 1, &fds, NULL, NULL, &tv);
 
         if (-1 == r) {
-        if (EINTR == errno)
-        	continue;
+            if (EINTR == errno)
+            	continue;
 
             errno_exit("select");
         }
@@ -140,6 +140,7 @@ int Ccamera_src_filter::read_frame(unsigned char * yuv420p_data) {
         if (0 == r) {
             fprintf(stderr, "select timeout/n");
             exit(EXIT_FAILURE);
+            //continue;
         }
 
         break;

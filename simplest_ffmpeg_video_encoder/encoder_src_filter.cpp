@@ -238,14 +238,13 @@ void mux_source_thread_main(void)
     while(1)
     {
         camera_src_filter->read_frame(yuv420p_data);
-        //memset (yuv420p_data,21,640*480*3/2);
         mux_source_filter->Put_frame(yuv420p_data,640*480*3/2);      
         
     }
 
 
     free(yuv420p_data);
-    camera_src_filter->start_capturing();
+    camera_src_filter->stop_capturing();
     camera_src_filter->uninit_device();
     camera_src_filter->close_device();
 
