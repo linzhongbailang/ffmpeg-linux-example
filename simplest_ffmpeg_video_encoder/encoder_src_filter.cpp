@@ -223,14 +223,14 @@ void mux_source_thread_main(void)
     
     camera_src_filter->init_device();
     camera_src_filter->start_capturing();
-
+    
  
     mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
-    mux_source_filter->cows=640;
-    mux_source_filter->rows=480;
+    mux_source_filter->cows=camera_src_filter->get_wid();
+    mux_source_filter->rows=camera_src_filter->get_height();
     unsigned char * yuv420p_data; 
 
-    yuv420p_data=(unsigned char *)malloc(640*480*3/2);
+    yuv420p_data=(unsigned char *)malloc(mux_source_filter->cows*mux_source_filter->rows*3/2);
     if(yuv420p_data==NULL){
         cout<< "yuv420p_data malloc failed" <<endl;    
     }
@@ -238,7 +238,7 @@ void mux_source_thread_main(void)
     while(1)
     {
         camera_src_filter->read_frame(yuv420p_data);
-        mux_source_filter->Put_frame(yuv420p_data,640*480*3/2);      
+        mux_source_filter->Put_frame(yuv420p_data,mux_source_filter->cows*mux_source_filter->rows*3/2);      
         
     }
 

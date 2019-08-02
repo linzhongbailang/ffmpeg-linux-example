@@ -84,6 +84,8 @@ Ccamera_src_filter::Ccamera_src_filter(void)
     n_buffers = 0;
     dev_name = (char *)"/dev/video0";
      
+    wid=0;
+    height=0;
 
     
 
@@ -193,7 +195,7 @@ int Ccamera_src_filter::read_frame(unsigned char * yuv420p_data) {
         frame_index++;
         cout << "frame index:" <<frame_index << " lenth:" <<buf.length <<endl;
 		//process_image(buffers[buf.index].start, buf.length);
-		PictureFormatConversion::yuv422_to_yuv420p( 640,480,(unsigned char *)buffers[buf.index].start,yuv420p_data);
+		PictureFormatConversion::yuv422_to_yuv420p( wid,height,(unsigned char *)buffers[buf.index].start,yuv420p_data);
  
 		if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
 			errno_exit("VIDIOC_QBUF");
@@ -518,18 +520,33 @@ void Ccamera_src_filter::init_device(void) {
 	} else {
 		/* Errors ignored. */
 	}
- 
+
+    //set fmt
 	CLEAR(fmt);
  
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.width = 640;
-	fmt.fmt.pix.height = 480;
+	fmt.fmt.pix.width = 320;
+	fmt.fmt.pix.height = 180;
 	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 	fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
  
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
 		errno_exit("VIDIOC_S_FMT");
- 
+
+
+    //查看帧格式
+    CLEAR(fmt);
+    fmt.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (-1 == xioctl(fd, VIDIOC_G_FMT, &fmt))
+		errno_exit("VIDIOC_G_FMT");
+    //ioctl(fd,VIDIOC_G_FMT,&fmt);
+    cout << "Currentdata format (" <<fmt.fmt.pix.width << "x" <<fmt.fmt.pix.height <<") " \
+        << "pixFromat :" << (char) (fmt.fmt.pix.pixelformat & 0xFF) \
+                         << (char) ((fmt.fmt.pix.pixelformat >> 8) & 0xFF) \
+                         << (char) ((fmt.fmt.pix.pixelformat >> 16) & 0xFF) \
+                         << (char) ((fmt.fmt.pix.pixelformat >> 24) & 0xFF) << endl;
+    wid=fmt.fmt.pix.width;
+    height=fmt.fmt.pix.height;
 	/* Note VIDIOC_S_FMT may change width and height. */
  
 	/* Buggy driver paranoia. */
@@ -539,7 +556,9 @@ void Ccamera_src_filter::init_device(void) {
 	min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
 	if (fmt.fmt.pix.sizeimage < min)
 		fmt.fmt.pix.sizeimage = min;
- 
+
+    
+    
 	switch (io) {
 	case IO_METHOD_READ:
 		init_read(fmt.fmt.pix.sizeimage);
@@ -585,6 +604,17 @@ void Ccamera_src_filter::open_device(void) {
 	}
 }
 
+int Ccamera_src_filter::get_wid(void)
+{
+
+    return wid;
+}
+int Ccamera_src_filter::get_height(void)
+{
+
+
+    return height;
+}
 
 
 

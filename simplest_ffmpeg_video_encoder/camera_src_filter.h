@@ -48,7 +48,8 @@ public:
     void close_device(void);
     void open_device(void);
 
-
+    int get_wid(void);
+    int get_height(void);
 
     
 private:
@@ -77,6 +78,8 @@ private:
     char *filename ;
 
     int frame_index;
+    int wid;
+    int height;
 
 };
 
