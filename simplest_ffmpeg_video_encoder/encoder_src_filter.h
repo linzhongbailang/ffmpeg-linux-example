@@ -35,6 +35,12 @@ typedef struct {
 }FRAME_DATA;
 
 
+enum Encoder_input_Format{
+    ENCODER_INPUT_FORMAT_CAMERA = 0,            //frome camera
+    ENCODER_INPUT_FORMAT_YUV420P=1,             //
+};
+
+
 class Cmux_source_filter{
 public:
     Cmux_source_filter(void );
@@ -48,8 +54,10 @@ public:
     enum AVPixelFormat pix_fmt;
     int cows;
     int rows;
+
+    Encoder_input_Format encoder_input_fmt;
+    char * file_in;
     
-     
     //class Cpix_buf{
     //    public:
     //        int a;
@@ -62,6 +70,8 @@ private:
     queue<FRAME_DATA> frame_data_queue;
     queue <int > queue_test;
     unsigned int frame_count;
+    
+    
 
     int reserve;
     std::mutex mut;

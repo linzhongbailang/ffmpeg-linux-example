@@ -148,36 +148,7 @@ int simplest_ffmpeg_video_yuv420_to_h264_init(int in_w,int in_h,char * filename_
     
 }
 
-int yuyv_to_yuv420p(int width,int height,unsigned char * yuyv_data,unsigned char * y_data,unsigned char * u_data,unsigned char * v_data)
-{
-    int num = width*height * 2 - 4;  
-    int index_y = 0;  
-    int index_u = 0;  
-    int index_v = 0;  
-    //unsigned char * y_data=yuv420p_data;
-    //unsigned char * u_data=yuv420p_data+width*height;
-    //unsigned char * v_data=yuv420p_data+width*height*5/4;
-    cout << "yuyv_to_yuv420p x y "<< width << " x "<< height <<endl;
 
-#if 0
-    for(int i = 0; i < num; i = i+4)  
-    {  
-        *(y_data+ (index_y++)) = *(yuyv_data + i);
-        //if(i/(width*4)%2==0)
-         //   *(u_data+ (index_u++)) = *(yuyv_data + i + 1);   
-        
-        *(y_data+ (index_y++)) = *(yuyv_data + i + 2); 
-        //if(i/(width*4)%2==0)
-         //   *(v_data + (index_v++)) = *(yuyv_data + i + 3); 
-    }  
-#else
-    memcpy(y_data,yuyv_data,width*height);
-    //memcpy(u_data,yuyv_data+width*height,width*height/4);
-    //memcpy(v_data,yuyv_data+width*height*5/4,width*height/4);
-#endif
-    return 1;
-
-}
 int simplest_ffmpeg_video_yuv420_to_h264(unsigned char * Frame_data_ptr)
 {
     int got_output,ret;   
@@ -328,7 +299,6 @@ int simplest_ffmpeg_h264_encoder(char * filename_in,char * filename_out)
 
     cout<< "start main thread, thread id : " << this_thread::get_id() << endl;
     mux_source_filter = new Cmux_source_filter();
-    
     
     thread mux_source_thread(mux_source_thread_main);
     

@@ -99,6 +99,7 @@ Cmux_source_filter::Cmux_source_filter(void)
     printf ("mux_source_filter::mux_source_filter \n");
     
     frame_count=0;
+    encoder_input_fmt=ENCODER_INPUT_FORMAT_CAMERA;
 }
 
 Cmux_source_filter::~Cmux_source_filter(void)
@@ -106,6 +107,9 @@ Cmux_source_filter::~Cmux_source_filter(void)
     printf ("mux_source_filter::~mux_source_filter \n");
 
 }
+
+
+
 int Cmux_source_filter::Put_frame(unsigned char * buf_ptr,unsigned int data_len)
 {
     std::lock_guard<std::mutex> lk(mut);
@@ -215,19 +219,30 @@ extern Cmux_source_filter * mux_source_filter;
 void mux_source_thread_main(void)
 {
     cout << "start mux_source_thread_main" << endl;
+    Ccamera_src_filter * camera_src_filter;
+    FILE *fp_in;
+    unsigned char * FrameData;
+    int framenum=100;
 
-    Ccamera_src_filter * camera_src_filter = new Ccamera_src_filter();
+
+    if(mux_source_filter->encoder_input_fmt==ENCODER_INPUT_FORMAT_CAMERA){
+        cout << "slecete the camera data input" << endl;
+         camera_src_filter= new Ccamera_src_filter();
     
 
-    camera_src_filter->open_device();
+        camera_src_filter->open_device();
+        
+        camera_src_filter->init_device();
+        camera_src_filter->start_capturing();
+        
+     
+        mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
+        mux_source_filter->cows=camera_src_filter->get_wid();
+        mux_source_filter->rows=camera_src_filter->get_height();
+
+    }
+
     
-    camera_src_filter->init_device();
-    camera_src_filter->start_capturing();
-    
- 
-    mux_source_filter->pix_fmt=AV_PIX_FMT_YUV420P;
-    mux_source_filter->cows=camera_src_filter->get_wid();
-    mux_source_filter->rows=camera_src_filter->get_height();
     unsigned char * yuv420p_data; 
 
     yuv420p_data=(unsigned char *)malloc(mux_source_filter->cows*mux_source_filter->rows*3/2);
@@ -244,9 +259,14 @@ void mux_source_thread_main(void)
 
 
     free(yuv420p_data);
-    camera_src_filter->stop_capturing();
-    camera_src_filter->uninit_device();
-    camera_src_filter->close_device();
+
+
+    
+    if(mux_source_filter->encoder_input_fmt==ENCODER_INPUT_FORMAT_CAMERA){
+        camera_src_filter->stop_capturing();
+        camera_src_filter->uninit_device();
+        camera_src_filter->close_device();
+    }
 
 }
 
